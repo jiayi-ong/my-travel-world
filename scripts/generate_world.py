@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--num-cities",
         type=int,
-        default=1,
+        default=10,
         help="Number of cities to generate in the world.",
     )
     parser.add_argument(
@@ -109,10 +109,18 @@ def main() -> int:
                 count_str = ", ".join(f"{k}={v}" for k, v in counts.items())
                 print(f"    [{layer_id}] {count_str}")
 
+    # Write stats.json to the world directory
+    from travel_world.manager.world_stats import compute_and_save
+    world_dir = manager._world_dir(world_state.world_id)
+    stats = compute_and_save(world_state, world_dir)
+    print(f"  stats     : {world_dir / 'stats.json'}")
+
     if args.verbose:
         import json
         print("\nFull summary:")
         print(json.dumps(summary, indent=2, default=str))
+        print("\nWorld stats:")
+        print(json.dumps(stats, indent=2, default=str))
 
     return 0
 
