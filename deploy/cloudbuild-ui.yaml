@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -f
+      - Dockerfile.ui
+      - -t
+      - gcr.io/$PROJECT_ID/travel-world-ui:latest
+      - .
+
+images:
+  - gcr.io/$PROJECT_ID/travel-world-ui:latest
+
+timeout: 600s
