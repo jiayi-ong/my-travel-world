@@ -1,0 +1,137 @@
+DESIGN NOTES — travel_world.core
+=================================
+Last updated: 2026-03-16
+
+
+1. WHY PYDANTIC V2?
+-------------------
+Pydantic v2 is used for all entity definitions because it provides:
+
+  a) Declarative validation — field constraints (ge/le, regex, etc.) are
+     expressed inline with the model definition rather than in separate
+     validator functions, keeping entity files concise and self-documenting.
+
+  b) JSON round-trip correctness — model_validate() and model_dump() handle
+     nested models, enums, and Union types automatically, which is critical
+     for layer serialisation and deserialisation.
+
+  c) OpenAPI schema generation — FastAPI reads Pydantic v2 models directly
+     to emit accurate JSON Schema / OpenAPI specs. Using str-based enums
+     means enum values appear as string literals in the schema, which is
+     both human-readable and compatible with LLM tool-calling schemas.
+
+  d) Performance — Pydantic v2's Rust-backed core is significantly faster
+     than v1 for large batch validation, important when loading world layers
+     with tens of thousands of entities at startup.
+
+  e) Type safety at runtime — invalid data (wrong types, out-of-range values)
+     raises ValidationError immediately at construction time, not hours into
+     a simulation run.
+
+
+2. THE REVIEW / RATINGS_SUMMARY MODULAR ATTRIBUTE PATTERN
+----------------------------------------------------------
+Reviews are loaded from a shared fixture file (e.g. fixtures/reviews.json)
+at world-generation time and randomly assigned to Location and Event entities
+by the generator. They are NOT hard-coded per entity for several reasons:
+
+  a) Realism through variety — a shared review pool means different worlds
+     generated from different seeds can exhibit different review distributions
+     on the same entities, supporting robustness experiments.
+
+  b) Separation of concerns — entity definitions stay clean (no giant inline
+     review arrays). The fixture file can be expanded independently.
+
+  c) Controlled sampling — the generator controls how many reviews each entity
+     receives based on its popularity_score, producing correlated but varied
+     distributions that look realistic to an LLM agent.
+
+  d) RatingsSummary as a computed aggregate — RatingsSummary.from_reviews()
+     is called once at generation time and the result is stored alongside the
+     entity. Services never need to iterate the full review list for display;
+     they read the summary directly. The full list is available for
+     deep-dive queries.
+
+
+3. LOCATION INHERITANCE VS COMPOSITION
+---------------------------------------
+The domain model uses Pydantic model inheritance (Hotel extends Location,
+Attraction extends Location, etc.) rather than composition.
+
+Composition was considered: Hotel could have contained a location: Location
+field rather than inheriting from it. This was rejected for these reasons:
+
+  a) Uniform storage in GeoLayer — all location subtypes are stored in a
+     single dict[str, Location]. Python's isinstance() and Pydantic's
+     discriminated union support allow the correct subtype to be reconstructed
+     on deserialisation without a parallel storage structure.
+
+  b) Query simplicity — get_locations_in_city() returns list[Location] and
+     the caller can isinstance-check or inspect location_type. With
+     composition, callers would need to unwrap a wrapper object every time.
+
+  c) Less redundancy — hotel.location_id reads naturally; hotel.location.location_id
+     adds an unnecessary level of indirection for the most common access pattern.
+
+  d) Pydantic v2 handles inheritance cleanly — model_validate with a
+     discriminator field (location_type) dispatches to the correct subclass
+     automatically during deserialisation, so there is no manual switch-case
+     needed in from_dict().
+
+The tradeoff is that Location is a "fat base class" — subclasses inherit fields
+they don't always use (e.g. opening_hours on a TransportHub). This is an
+acceptable trade for the access-pattern and storage benefits described above.
+
+
+4. WORLDSTATE AS A PURE DATA CONTAINER
+----------------------------------------
+WorldState intentionally has no methods that mutate world state. All mutation
+is performed by layer methods (record_booking, book_ticket, _on_tick) or by
+the WorldManager, which constructs a new WorldState via with_layer().
+
+This design choice has several benefits:
+
+  a) Immutability by convention — services that receive a WorldState via
+     dependency injection cannot accidentally mutate global world state.
+     They must explicitly call a layer method, which can be frozen.
+
+  b) Testability — a test can construct a minimal WorldState with mock layers
+     and pass it to any service without setting up the full WorldManager
+     infrastructure.
+
+  c) Snapshot semantics — WorldState represents a consistent point-in-time
+     view of the world. Two requests served concurrently receive the same
+     WorldState snapshot; updates to layers are applied between ticks, not
+     mid-request.
+
+  d) Composability — with_layer() returns a new WorldState with one layer
+     swapped, enabling counterfactual queries (e.g. "what would the itinerary
+     look like if we replaced the weather layer with a stormy scenario?")
+     without touching the live world.
+
+
+5. THE ROLE OF ENUMS FOR TYPE SAFETY AND OPENAPI SCHEMA GENERATION
+--------------------------------------------------------------------
+All categorical values in the domain model are expressed as str-based Enum
+subclasses rather than raw strings for the following reasons:
+
+  a) Compile-time (and import-time) validation — referencing
+     TransportMode.FLIGHT in service code fails loudly at import time if the
+     enum value is renamed, rather than silently at runtime.
+
+  b) Exhaustiveness checking — mypy / pyright can warn when a match/case or
+     if-elif chain does not cover all enum members, preventing silent bugs
+     when new enum values are added.
+
+  c) OpenAPI schema correctness — FastAPI / Pydantic v2 emit enum values as
+     JSON string literals in the schema. LLM tool-calling frameworks that
+     consume the OpenAPI spec (e.g. function-calling in GPT-4) can enumerate
+     the valid string values, reducing hallucinated inputs.
+
+  d) Readability — str-based enums serialise to their human-readable value
+     ("flight", "economy") rather than an integer ordinal, making world JSON
+     files inspectable without a lookup table.
+
+  e) Centralisation — all valid categorical values for the entire simulation
+     are defined in a single file (enums.py), making it easy to review the
+     full vocabulary of the domain model at a glance.
