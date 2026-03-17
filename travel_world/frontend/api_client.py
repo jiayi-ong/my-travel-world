@@ -55,6 +55,11 @@ class TravelWorldClient:
         """Set the active world on the backend."""
         return self._post(f"/world/{world_id}/load")
 
+    @st.cache_data(ttl=300, show_spinner=False)
+    def get_map_data(_self, world_id: str) -> dict:
+        """Return all geographic data for the interactive map (cities, districts, locations, flight routes)."""
+        return _self._get(f"/world/{world_id}/map_data")
+
     # ── Session management ──────────────────────────────────────────────────
 
     def create_session(self, world_id: str) -> str:
@@ -67,6 +72,11 @@ class TravelWorldClient:
         return self._put(f"/session/{session_id}/preferences", json=preferences)
 
     @st.cache_data(ttl=5, show_spinner=False)
+    def get_trip_plan(_self, session_id: str) -> dict:
+        """Get full trip plan including all items."""
+        return _self._get(f"/session/{session_id}/trip_plan")
+
+    @st.cache_data(ttl=5, show_spinner=False)
     def get_trip_plan_summary(_self, session_id: str) -> dict:
         """Get current trip plan cost summary."""
         return _self._get(f"/session/{session_id}/trip_plan/summary")
@@ -74,6 +84,10 @@ class TravelWorldClient:
     def add_trip_item(self, session_id: str, item: dict) -> dict:
         """Add an item to the session trip plan."""
         return self._post(f"/session/{session_id}/trip_plan/add", json=item)
+
+    def delete_trip_item(self, session_id: str, item_id: str) -> dict:
+        """Remove an item from the trip plan by item_id."""
+        return self._delete(f"/session/{session_id}/trip_plan/{item_id}")
 
     def post_chat_message(self, session_id: str, role: str, content: str) -> dict:
         """Post a chat message to the session."""
@@ -174,8 +188,25 @@ class TravelWorldClient:
         """Book event tickets."""
         return self._post(
             "/events/book",
-            json={"event_id": event_id, "quantity": quantity, "session_id": session_id},
+            params={"event_id": event_id, "quantity": quantity, "session_id": session_id},
         )
+
+    # ── Weather ─────────────────────────────────────────────────────────────
+
+    @st.cache_data(ttl=30, show_spinner=False)
+    def get_weather_forecast(_self, city_id: str, start_date: str, end_date: str) -> list[dict]:
+        """Get daily weather forecast for a city."""
+        return _self._get("/weather/forecast", params={
+            "city_id": city_id, "start_date": start_date, "end_date": end_date
+        })
+
+    @st.cache_data(ttl=30, show_spinner=False)
+    def get_weather_snapshot(_self, city_id: str, date: str) -> dict | None:
+        """Get weather for a single city/date. Returns None if not available."""
+        try:
+            return _self._get("/weather/snapshot", params={"city_id": city_id, "date": date})
+        except Exception:
+            return None
 
     # ── Attractions ─────────────────────────────────────────────────────────
 
@@ -187,6 +218,31 @@ class TravelWorldClient:
         if category is not None:
             params["category"] = category
         return _self._get("/attractions/search", params=params)
+
+    # ── Restaurants ─────────────────────────────────────────────────────────
+
+    @st.cache_data(ttl=5, show_spinner=False)
+    def search_restaurants(_self, city_id: str, cuisine: str | None = None,
+                           max_avg_spend: float | None = None,
+                           reservation_required: bool | None = None,
+                           session_id: str | None = None) -> list[dict]:
+        """Search restaurants in a city."""
+        params: dict = {"city_id": city_id}
+        if cuisine is not None:
+            params["cuisine"] = cuisine
+        if max_avg_spend is not None:
+            params["max_avg_spend"] = max_avg_spend
+        if reservation_required is not None:
+            params["reservation_required"] = reservation_required
+        if session_id is not None:
+            params["session_id"] = session_id
+        result = _self._get("/restaurants/search", params=params)
+        return result.get("restaurants", result) if isinstance(result, dict) else result
+
+    @st.cache_data(ttl=30, show_spinner=False)
+    def get_restaurant_detail(_self, restaurant_id: str) -> dict:
+        """Get full details for a restaurant including reviews."""
+        return _self._get(f"/restaurants/{restaurant_id}")
 
     # ── Internal helpers ────────────────────────────────────────────────────
 
@@ -228,6 +284,23 @@ class TravelWorldClient:
         """Make a PUT request, raise APIError on non-2xx."""
         try:
             response = self._client.put(path, json=json)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as exc:
+            raise APIError(
+                status_code=exc.response.status_code,
+                message=f"API error {exc.response.status_code}: {exc.response.text}",
+            ) from exc
+        except httpx.RequestError as exc:
+            raise APIError(
+                status_code=0,
+                message=f"Connection error: {exc}",
+            ) from exc
+
+    def _delete(self, path: str, params: dict | None = None) -> Any:
+        """Make a DELETE request, raise APIError on non-2xx."""
+        try:
+            response = self._client.delete(path, params=params)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as exc:
