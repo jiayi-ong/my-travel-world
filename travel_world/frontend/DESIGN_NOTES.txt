@@ -1,0 +1,62 @@
+FRONTEND DESIGN NOTES
+=====================
+
+1. Why Streamlit over Dash or React+FastAPI
+-------------------------------------------
+Streamlit was chosen because it is Python-native and requires no JavaScript build chain.
+For a research project, the priority is rapid iteration on data and agent logic, not
+frontend polish. Streamlit lets a single developer write the entire stack in Python,
+run the UI with a one-line command, and observe results immediately. Dash requires
+callback wiring that slows down prototyping. React+FastAPI gives the most control but
+introduces a JS build chain, npm dependency management, and a much steeper setup cost
+that is not justified for a research simulator.
+
+2. The tworld_ namespace pattern in session_state
+--------------------------------------------------
+Streamlit's st.session_state is a flat global dict shared across all components and
+third-party libraries. Without namespacing, key collisions are silent and hard to debug
+(e.g., a library using the key "session_id" would overwrite ours). By prefixing every
+Travel World key with "tworld_", all app state is instantly identifiable, easy to
+enumerate (iterate keys starting with "tworld_"), and safe to reset in bulk without
+disturbing Streamlit internals or third-party widget state.
+
+3. Why API client uses @st.cache_data for GET calls
+----------------------------------------------------
+Streamlit re-runs the entire script on every user interaction (widget change, button
+click, tab switch). Without caching, every re-render would fire a fresh HTTP request to
+the backend, causing noticeable latency and unnecessary load. @st.cache_data(ttl=5)
+memoizes GET responses for 5 seconds, so rapid interactions (e.g., toggling a filter)
+reuse the cached result while still reflecting backend changes within a few seconds.
+POST/PUT/DELETE are never cached because they mutate state and must always reach the server.
+
+4. Component pattern: why flight_card, hotel_card, route_panel are separate modules
+------------------------------------------------------------------------------------
+Each card type has its own rendering logic, conditional display rules, and callback
+wiring. Keeping them in separate modules means:
+  - Each tab only imports what it needs (no monolithic ui.py).
+  - Components can be tested in isolation by passing mock dicts.
+  - Future changes to hotel card layout do not risk breaking flight card rendering.
+  - The component boundary makes it easy to replace a card with a richer version
+    (e.g., adding images or expandable details) without touching tab-level code.
+
+5. The LLM tab design philosophy
+----------------------------------
+The AI Assistant tab is intentionally a UI stub. No LLM logic, prompt engineering, or
+agent orchestration lives in this project. The tab's sole job is to:
+  - Display the session_id so an external LLM project can connect to the same world state.
+  - Show a connection status indicator (polled from the backend).
+  - Render the shared chat history that both the user and the LLM agent write to.
+  - Accept user messages and forward them to the backend chat log.
+This separation keeps the Travel World simulator self-contained and testable without
+requiring a live LLM. The external project drives all AI behavior via the same REST API
+that the frontend uses.
+
+6. How clear_search_results() ensures stale data does not show when preferences change
+---------------------------------------------------------------------------------------
+Search results (flights, hotels, events, routes) are cached in session state to avoid
+re-fetching on every re-render. When the user changes a preference (origin city, dates,
+budget), the old results are no longer valid. update_preference() always calls
+clear_search_results() immediately after writing the new value, setting all four result
+keys to None. Each tab checks for None on render and shows an "click Search to load
+results" prompt instead of displaying outdated data. This ensures the user always sees
+results that correspond to their current preferences.
