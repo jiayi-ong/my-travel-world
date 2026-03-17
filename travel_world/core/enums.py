@@ -112,6 +112,10 @@ class AmenityType(str, Enum):
     LAUNDRY = "laundry"
     ROOM_SERVICE = "room_service"
     PET_FRIENDLY = "pet_friendly"
+    AIR_CONDITIONING = "air_conditioning"
+    BUSINESS_CENTER = "business_center"
+    EV_CHARGING = "ev_charging"
+    CONCIERGE = "concierge"
 
 
 class EventCategory(str, Enum):
@@ -126,6 +130,7 @@ class EventCategory(str, Enum):
     THEATER = "theater"
     COMEDY = "comedy"
     MARKET = "market"
+    ATTRACTION = "attraction"
 
 
 class AttractionCategory(str, Enum):

@@ -55,34 +55,41 @@ class EventGenerator:
     def generate(self, world_id: str, meta: LayerMeta, geo_layer) -> EventLayer:
         """Generate events for all cities in geo_layer.
 
-        Templates are cycled through in shuffled order so every template in
-        event_templates.json appears at least once per city before any repeats.
+        Template selection is weighted toward each city's dominant_event_categories
+        (3× weight), so cities with distinct cultural characters produce distinct
+        event mixes. All templates still appear, just proportionally more of the
+        dominant categories.
         """
-        # Build a flat shuffled list of all templates for deterministic cycling
         all_templates = [t for ts in self._templates.values() for t in ts]
-        shuffled_templates = list(all_templates)
-        self.rng.shuffle(shuffled_templates)
 
         events: dict = {}
         start = date.today()
         days = self.config.get("date_range_days", 90)
         date_range = [(start + timedelta(days=i)).isoformat() for i in range(days)]
         event_idx = 0
-        city_slot = 0  # tracks position within shuffled_templates per city
 
         for city in geo_layer.cities.values():
             venues = geo_layer.get_locations_by_type(city.city_id, LocationType.EVENT_VENUE)
             if not venues:
                 continue
+
+            # Build per-city weighted template list: dominant categories get 3× weight
+            dominant = set(getattr(city, "dominant_event_categories", []))
+            if dominant:
+                weighted: list[dict] = []
+                for t in all_templates:
+                    weight = 3 if t["category"].lower() in dominant else 1
+                    weighted.extend([t] * weight)
+            else:
+                weighted = all_templates
+
             n_events = self.config.get("num_events_per_city", 20)
-            for slot in range(n_events):
+            for _ in range(n_events):
                 event_id = f"event_{world_id}_{event_idx:04d}"
-                # Cycle through shuffled templates so all appear before repeats
-                template = shuffled_templates[(city_slot + slot) % len(shuffled_templates)]
+                template = self.rng.choice(weighted)
                 event = self._generate_event(event_id, city, venues, date_range, template)
                 events[event_id] = event
                 event_idx += 1
-            city_slot = (city_slot + n_events) % len(shuffled_templates)
 
         return EventLayer(meta, events)
 
@@ -102,25 +109,44 @@ class EventGenerator:
         description = template["description"]
         template_rating = float(template.get("rating", 4.0))
 
+        # Read attraction flags from template (default to regular event behaviour)
+        is_attraction = category == EventCategory.ATTRACTION
+        requires_booking = bool(template.get("requires_booking", not is_attraction))
+        is_all_day_entry = bool(template.get("is_all_day_entry", is_attraction))
+
         venue = self.rng.choice(venues)
         # Leave at least 3 slots so end_dt stays within range
         start_date = self.rng.choice(date_range[:-3])
-        start_dt = dt.fromisoformat(
-            f"{start_date}T{self.rng.randint(17, 21):02d}:00:00"
-        )
-        if category == EventCategory.FESTIVAL:
-            duration_hours = self.rng.randint(24, 72)
-        elif category == EventCategory.MARKET:
-            duration_hours = self.rng.randint(6, 12)
+
+        if is_all_day_entry:
+            # Attractions open in the morning and close in the evening
+            open_hour = self.rng.randint(8, 10)
+            close_hour = self.rng.randint(18, 21)
+            start_dt = dt.fromisoformat(f"{start_date}T{open_hour:02d}:00:00")
+            end_dt = dt.fromisoformat(f"{start_date}T{close_hour:02d}:00:00")
         else:
-            duration_hours = self.rng.randint(2, 4)
-        end_dt = start_dt + timedelta(hours=duration_hours)
+            start_dt = dt.fromisoformat(
+                f"{start_date}T{self.rng.randint(17, 21):02d}:00:00"
+            )
+            if category == EventCategory.FESTIVAL:
+                duration_hours = self.rng.randint(24, 72)
+            elif category == EventCategory.MARKET:
+                duration_hours = self.rng.randint(6, 12)
+            else:
+                duration_hours = self.rng.randint(2, 4)
+            end_dt = start_dt + timedelta(hours=duration_hours)
+
         capacity = self.rng.randint(50, 5000)
-        base_price = round(self.rng.uniform(10, 200), 2)
+        if is_attraction and not requires_booking:
+            base_price = 0.0  # free-entry attractions
+        elif is_attraction:
+            base_price = round(self.rng.uniform(5, 30), 2)  # paid attractions are cheaper than events
+        else:
+            base_price = round(self.rng.uniform(10, 200), 2)
         popularity = round(self.rng.uniform(0.3, 1.0), 2)
 
-        # Assign reviews; blend fixture reviews with the template's rating signal
-        raw_reviews = self.fixture_loader.get_reviews("event", self.rng.randint(3, 10))
+        # Assign reviews filtered to matching event category
+        raw_reviews = self.fixture_loader.get_reviews("event", self.rng.randint(3, 10), category=cat_key)
         reviews = [Review(**r) for r in raw_reviews]
         ratings = RatingsSummary.from_reviews(reviews)
         # Override aggregate rating with template value (jitter ±0.2) clamped 0–5
@@ -141,6 +167,8 @@ class EventGenerator:
             end_datetime=end_dt.isoformat(),
             capacity=capacity,
             base_ticket_price=base_price,
+            requires_booking=requires_booking,
+            is_all_day_entry=is_all_day_entry,
             popularity=popularity,
             description=description,
             tags=[category.value.lower()],

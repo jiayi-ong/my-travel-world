@@ -118,5 +118,101 @@
     "name": "Organic Farmers Market",
     "description": "Every Sunday, local farmers bring fresh seasonal produce, homemade preserves, and foraged ingredients directly to city-centre buyers — no middlemen, all flavour.",
     "rating": 4.6
+  },
+  {
+    "category": "attraction",
+    "name": "City Botanic Gardens",
+    "description": "Stroll through 30 hectares of landscaped gardens showcasing thousands of plant species from around the world, with tranquil ponds and seasonal flower displays.",
+    "rating": 4.5,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Riverside Public Park",
+    "description": "A beloved green escape along the river with walking trails, picnic lawns, playgrounds, and sweeping city skyline views. Open to all, free of charge.",
+    "rating": 4.4,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Central Public Library",
+    "description": "An architectural landmark housing over two million volumes, rare manuscript archives, free public reading rooms, and rotating art exhibitions on every floor.",
+    "rating": 4.3,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Old Town Heritage Walk",
+    "description": "Wander through cobblestone streets, centuries-old guild houses, and hidden courtyards at your own pace. Free self-guided maps available at every corner kiosk.",
+    "rating": 4.6,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Waterfront Promenade",
+    "description": "A vibrant public esplanade lined with cafés, street performers, and panoramic harbour views. Open all day and illuminated beautifully after dark.",
+    "rating": 4.5,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Public Beach",
+    "description": "A wide sandy shore with calm, clear water perfect for swimming. Free lifeguard service in summer, beach volleyball courts, and sunset views that draw evening crowds.",
+    "rating": 4.7,
+    "requires_booking": false,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "City Zoo",
+    "description": "Home to over 500 species across 40 hectares of naturalistic habitats. Conservation programmes run alongside daily keeper talks and interactive children's zones.",
+    "rating": 4.6,
+    "requires_booking": true,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "National History Museum",
+    "description": "Twelve galleries spanning earth sciences, human evolution, and world civilisations — anchored by a full T. rex skeleton in the soaring Great Hall.",
+    "rating": 4.8,
+    "requires_booking": true,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "City Aquarium",
+    "description": "Dive into the deep via 50 living exhibits, a 10-metre ocean tunnel, shark feeding shows, and touch pools for hands-on encounters with rays and starfish.",
+    "rating": 4.5,
+    "requires_booking": true,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Modern Art Museum",
+    "description": "A world-class collection of 20th and 21st century works across painting, sculpture, photography, and digital media, housed in a striking contemporary building.",
+    "rating": 4.4,
+    "requires_booking": true,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Science & Technology Museum",
+    "description": "Hundreds of interactive exhibits covering space exploration, robotics, renewable energy, and the human body — a hands-on adventure for curious minds of all ages.",
+    "rating": 4.7,
+    "requires_booking": true,
+    "is_all_day_entry": true
+  },
+  {
+    "category": "attraction",
+    "name": "Historic Fortress & Battlements",
+    "description": "Climb the original medieval walls for panoramic city views, explore dungeon chambers, and attend daily live re-enactments of the city's most dramatic sieges.",
+    "rating": 4.6,
+    "requires_booking": true,
+    "is_all_day_entry": true
   }
 ]

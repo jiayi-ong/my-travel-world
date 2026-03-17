@@ -1,107 +1,52 @@
 [
-  {
-    "reviewer_id": "reviewer_001",
-    "rating": 4.9,
-    "text": "The atmosphere was electric from the moment we arrived. The lineup exceeded our expectations and the crowd energy was infectious.",
-    "date": "2025-01-20",
-    "tags": ["amazing_atmosphere", "great_lineup", "worth_it"]
-  },
-  {
-    "reviewer_id": "reviewer_002",
-    "rating": 2.2,
-    "text": "Total chaos — no clear signage, queues were disorganised, and we missed the opening act due to slow entry.",
-    "date": "2025-02-08",
-    "tags": ["chaotic", "crowded", "disappointing"]
-  },
-  {
-    "reviewer_id": "reviewer_003",
-    "rating": 4.5,
-    "text": "Perfectly family-friendly event with activities for all ages. The kids loved the interactive zones and we never felt unsafe.",
-    "date": "2025-02-28",
-    "tags": ["family_friendly", "well_organized", "worth_it"]
-  },
-  {
-    "reviewer_id": "reviewer_004",
-    "rating": 3.3,
-    "text": "Good event overall but the ticket price felt steep for what was offered. The headline performance was great but supporting acts were weak.",
-    "date": "2025-03-15",
-    "tags": ["overpriced_tickets", "great_lineup", "crowded"]
-  },
-  {
-    "reviewer_id": "reviewer_005",
-    "rating": 5.0,
-    "text": "Completely immersive experience — every detail was thought through. Left feeling inspired and already looking forward to next year.",
-    "date": "2025-04-04",
-    "tags": ["immersive", "amazing_atmosphere", "worth_it"]
-  },
-  {
-    "reviewer_id": "reviewer_006",
-    "rating": 1.8,
-    "text": "A very disappointing show. The advertised headliner cancelled last minute and the replacement was far below standard.",
-    "date": "2025-04-20",
-    "tags": ["disappointing", "overpriced_tickets"]
-  },
-  {
-    "reviewer_id": "reviewer_007",
-    "rating": 4.3,
-    "text": "Well-organised sporting event with great crowd management. The facilities were accessible and the competition was thrilling.",
-    "date": "2025-05-12",
-    "tags": ["well_organized", "accessible", "amazing_atmosphere"]
-  },
-  {
-    "reviewer_id": "reviewer_008",
-    "rating": 3.7,
-    "text": "Enjoyable evening but the venue was clearly over capacity. Sound quality suffered and it was hard to see the stage.",
-    "date": "2025-06-02",
-    "tags": ["crowded", "great_lineup", "worth_it"]
-  },
-  {
-    "reviewer_id": "reviewer_009",
-    "rating": 4.6,
-    "text": "An intimate and beautifully curated cultural festival. Small enough to feel personal yet rich enough to fill an entire weekend.",
-    "date": "2025-06-28",
-    "tags": ["immersive", "well_organized", "amazing_atmosphere"]
-  },
-  {
-    "reviewer_id": "reviewer_010",
-    "rating": 2.8,
-    "text": "The adult-only designation was not enforced at the door and the event lost its character as a result. Poorly managed entry.",
-    "date": "2025-07-14",
-    "tags": ["adult_only", "chaotic", "disappointing"]
-  },
-  {
-    "reviewer_id": "reviewer_011",
-    "rating": 4.1,
-    "text": "Great accessibility provisions — clear signage, wheelchair-friendly routes, and helpful volunteers throughout the venue.",
-    "date": "2025-08-03",
-    "tags": ["accessible", "well_organized", "family_friendly"]
-  },
-  {
-    "reviewer_id": "reviewer_012",
-    "rating": 4.7,
-    "text": "The highlight of our trip. Energetic performances, fantastic food stalls, and a crowd that was there for the right reasons.",
-    "date": "2025-09-06",
-    "tags": ["amazing_atmosphere", "great_lineup", "worth_it"]
-  },
-  {
-    "reviewer_id": "reviewer_013",
-    "rating": 3.5,
-    "text": "A solid event but it peaked early and the final hours felt sparse. Worth attending for the afternoon sessions at minimum.",
-    "date": "2025-10-18",
-    "tags": ["worth_it", "crowded", "well_organized"]
-  },
-  {
-    "reviewer_id": "reviewer_014",
-    "rating": 4.4,
-    "text": "Genuinely immersive theatre production — the boundary between audience and performer was deliberately blurred in the best way.",
-    "date": "2025-11-09",
-    "tags": ["immersive", "amazing_atmosphere", "adult_only"]
-  },
-  {
-    "reviewer_id": "reviewer_015",
-    "rating": 2.5,
-    "text": "Ticket prices have doubled since last year with no noticeable improvement. The event is coasting on its reputation at this point.",
-    "date": "2025-12-06",
-    "tags": ["overpriced_tickets", "disappointing", "crowded"]
-  }
+  {"reviewer_id": "reviewer_001", "positivity": 0.93, "text": "Electric atmosphere from start to finish — the performance was world-class.", "date": "2025-01-20", "tags": ["atmosphere", "performance"], "event_categories": ["music", "theater", "festival", "comedy"]},
+  {"reviewer_id": "reviewer_002", "positivity": 0.50, "text": "Decent show but the venue's sightlines were poor from the back rows.", "date": "2025-02-07", "tags": ["sightlines", "average"], "event_categories": ["music", "theater", "sports"]},
+  {"reviewer_id": "reviewer_003", "positivity": 0.20, "text": "Terrible organisation — queues stretched around the block and we missed the first act entirely.", "date": "2025-02-18", "tags": ["disorganised", "queues"], "event_categories": []},
+  {"reviewer_id": "reviewer_004", "positivity": 0.88, "text": "Spectacular light show and the best sound quality I have ever heard live.", "date": "2025-03-05", "tags": ["production", "sound"], "event_categories": ["music", "theater"]},
+  {"reviewer_id": "reviewer_005", "positivity": 0.68, "text": "Enjoyable event overall, though food stalls ran out of options by mid-afternoon.", "date": "2025-03-22", "tags": ["food", "enjoyable"], "event_categories": ["food", "festival", "market"]},
+  {"reviewer_id": "reviewer_006", "positivity": 0.15, "text": "Performers were 90 minutes late and the cancellation announcement came via a single tweet.", "date": "2025-04-01", "tags": ["delayed", "poor_communication"], "event_categories": []},
+  {"reviewer_id": "reviewer_007", "positivity": 0.82, "text": "Wonderful family atmosphere — the kids were captivated and the hosts were warm.", "date": "2025-04-18", "tags": ["family_friendly", "hosts"], "event_categories": ["attraction", "festival", "market"]},
+  {"reviewer_id": "reviewer_008", "positivity": 0.45, "text": "The concept was interesting but execution felt rushed and under-rehearsed.", "date": "2025-05-03", "tags": ["average", "execution"], "event_categories": []},
+  {"reviewer_id": "reviewer_009", "positivity": 0.75, "text": "Great variety of acts and the venue layout meant you were never far from a stage.", "date": "2025-05-16", "tags": ["variety", "layout"], "event_categories": ["festival", "exhibition", "music"]},
+  {"reviewer_id": "reviewer_010", "positivity": 0.35, "text": "Overpriced for what was essentially a community fair dressed up as a premium event.", "date": "2025-06-02", "tags": ["overpriced", "disappointing"], "event_categories": []},
+  {"reviewer_id": "reviewer_011", "positivity": 0.91, "text": "Unforgettable night — the headline act played three encores and the crowd energy was incredible.", "date": "2025-06-19", "tags": ["headline_act", "crowd_energy"], "event_categories": ["music", "comedy"]},
+  {"reviewer_id": "reviewer_012", "positivity": 0.55, "text": "Average experience — neither the worst nor the best event I have attended this year.", "date": "2025-07-04", "tags": ["average"], "event_categories": []},
+  {"reviewer_id": "reviewer_013", "positivity": 0.80, "text": "Beautifully curated programme with a strong balance of emerging and established artists.", "date": "2025-07-20", "tags": ["curation", "programme"], "event_categories": ["music", "exhibition", "festival", "culture"]},
+  {"reviewer_id": "reviewer_014", "positivity": 0.28, "text": "Parking chaos added two hours to our evening and the toilet facilities were disgraceful.", "date": "2025-08-08", "tags": ["logistics", "facilities"], "event_categories": []},
+  {"reviewer_id": "reviewer_015", "positivity": 0.87, "text": "Immersive staging that made you feel part of the story — already buying tickets for next year.", "date": "2025-08-25", "tags": ["immersive", "staging"], "event_categories": ["theater", "exhibition"]},
+  {"reviewer_id": "reviewer_016", "positivity": 0.72, "text": "Great selection of local craft vendors; the live folk music added a lovely ambient backdrop.", "date": "2025-09-08", "tags": ["vendors", "music"], "event_categories": ["market", "food", "festival"]},
+  {"reviewer_id": "reviewer_017", "positivity": 0.28, "text": "Sound system kept cutting out mid-set — the technical team seemed unprepared for the crowd size.", "date": "2025-09-22", "tags": ["sound", "technical_issues"], "event_categories": ["music", "theater"]},
+  {"reviewer_id": "reviewer_018", "positivity": 0.88, "text": "The opening ceremony alone was worth the ticket price — truly spectacular pyrotechnics.", "date": "2025-10-06", "tags": ["opening_ceremony", "production"], "event_categories": ["festival", "sports", "theater"]},
+  {"reviewer_id": "reviewer_019", "positivity": 0.43, "text": "Confusing layout and poor signage made it hard to navigate between stages.", "date": "2025-10-20", "tags": ["signage", "layout"], "event_categories": []},
+  {"reviewer_id": "reviewer_020", "positivity": 0.91, "text": "One of those rare events that exceeds every expectation — unforgettable performances all round.", "date": "2025-11-03", "tags": ["performance", "memorable"], "event_categories": ["music", "theater", "comedy"]},
+  {"reviewer_id": "reviewer_021", "positivity": 0.35, "text": "The rain shelter was woefully inadequate and the ground turned to mud after an hour.", "date": "2025-11-17", "tags": ["facilities", "weather"], "event_categories": ["sports", "festival"]},
+  {"reviewer_id": "reviewer_022", "positivity": 0.79, "text": "Well-organised queuing system with multiple bag-check points; security was thorough but fast.", "date": "2025-12-01", "tags": ["organisation", "security"], "event_categories": []},
+  {"reviewer_id": "reviewer_023", "positivity": 0.20, "text": "The headliner cancelled an hour before the show and the replacement was a local support act.", "date": "2025-12-15", "tags": ["cancellation", "disappointing"], "event_categories": ["music", "comedy"]},
+  {"reviewer_id": "reviewer_024", "positivity": 0.85, "text": "Intimate venue setting meant even the cheap tickets gave a brilliant view of the stage.", "date": "2025-12-29", "tags": ["sightlines", "intimate"], "event_categories": ["music", "theater", "comedy"]},
+  {"reviewer_id": "reviewer_025", "positivity": 0.60, "text": "Decent event overall though the merchandise stall ran out of programmes by midday.", "date": "2026-01-12", "tags": ["merchandise", "average"], "event_categories": []},
+  {"reviewer_id": "reviewer_026", "positivity": 0.93, "text": "The interactive exhibition was unlike anything I had seen — genuinely moving and intellectually engaging.", "date": "2026-01-26", "tags": ["exhibition", "interactive"], "event_categories": ["exhibition", "culture"]},
+  {"reviewer_id": "reviewer_027", "positivity": 0.38, "text": "Long waits at every food and drink stall; the cashless payment system crashed repeatedly.", "date": "2026-02-09", "tags": ["wait_time", "technical_issues"], "event_categories": []},
+  {"reviewer_id": "reviewer_028", "positivity": 0.82, "text": "The comedy line-up was perfectly pitched — mix of emerging acts and established names.", "date": "2026-02-23", "tags": ["comedy", "curation"], "event_categories": ["comedy"]},
+  {"reviewer_id": "reviewer_029", "positivity": 0.18, "text": "Overcrowded beyond safe limits; I had to leave early as the crowd pressure near the stage felt dangerous.", "date": "2026-03-09", "tags": ["overcrowded", "safety"], "event_categories": []},
+  {"reviewer_id": "reviewer_030", "positivity": 0.74, "text": "Smooth entry with QR code scanning; the warm-up act was surprisingly better than expected.", "date": "2026-03-23", "tags": ["organisation", "performance"], "event_categories": ["music", "comedy"]},
+  {"reviewer_id": "reviewer_031", "positivity": 0.89, "text": "The fireworks finale was extraordinary — timed perfectly to the closing score.", "date": "2026-04-06", "tags": ["fireworks", "production"], "event_categories": ["festival", "theater", "music"]},
+  {"reviewer_id": "reviewer_032", "positivity": 0.45, "text": "The acoustic quality in the outer sections of the venue was noticeably worse than the floor.", "date": "2026-04-20", "tags": ["acoustics", "sightlines"], "event_categories": ["music", "theater"]},
+  {"reviewer_id": "reviewer_033", "positivity": 0.77, "text": "Great charity component to the event — we felt our attendance actually contributed to something positive.", "date": "2026-05-04", "tags": ["charity", "community"], "event_categories": ["culture", "market"]},
+  {"reviewer_id": "reviewer_034", "positivity": 0.22, "text": "Too many commercial sponsors with their logos dominating every surface — completely killed the atmosphere.", "date": "2026-05-18", "tags": ["commercialised", "atmosphere"], "event_categories": []},
+  {"reviewer_id": "reviewer_035", "positivity": 0.84, "text": "The street food village was as good as the performances; we spent the whole day eating our way around.", "date": "2026-06-01", "tags": ["food", "festival"], "event_categories": ["food", "festival", "market"]},
+  {"reviewer_id": "reviewer_036", "positivity": 0.50, "text": "Middle-of-the-road experience — worth attending once but not something to travel specifically for.", "date": "2026-06-15", "tags": ["average"], "event_categories": []},
+  {"reviewer_id": "reviewer_037", "positivity": 0.94, "text": "Breathtaking aerial acrobatics combined with a live orchestra — I was in tears by the finale.", "date": "2026-06-29", "tags": ["production", "performance"], "event_categories": ["theater", "music"]},
+  {"reviewer_id": "reviewer_038", "positivity": 0.32, "text": "Half the scheduled activities were moved indoors with no explanation; the outdoor programme was gutted.", "date": "2026-07-13", "tags": ["poor_communication", "disappointing"], "event_categories": []},
+  {"reviewer_id": "reviewer_039", "positivity": 0.80, "text": "The late-night DJ set in the forest clearing was the best surprise discovery of the weekend.", "date": "2026-07-27", "tags": ["surprise", "atmosphere"], "event_categories": ["music", "festival"]},
+  {"reviewer_id": "reviewer_040", "positivity": 0.25, "text": "The app kept showing wrong tent locations and staff gave contradictory directions.", "date": "2026-08-10", "tags": ["signage", "disorganised"], "event_categories": []},
+  {"reviewer_id": "reviewer_041", "positivity": 0.88, "text": "Perfectly sized event — big enough to have scale but small enough to feel personal and accessible.", "date": "2026-08-24", "tags": ["intimate", "atmosphere"], "event_categories": []},
+  {"reviewer_id": "reviewer_042", "positivity": 0.55, "text": "Some strong performances but the programme lacked cohesion — felt more like a grab-bag than a curated festival.", "date": "2026-09-07", "tags": ["programme", "average"], "event_categories": ["festival", "music"]},
+  {"reviewer_id": "reviewer_043", "positivity": 0.83, "text": "The craft market alongside the main stage was a wonderful addition — bought gifts for everyone back home.", "date": "2026-09-21", "tags": ["market", "atmosphere"], "event_categories": ["market", "food", "festival"]},
+  {"reviewer_id": "reviewer_044", "positivity": 0.15, "text": "The event started ninety minutes late with no explanation or apology from the organisers.", "date": "2026-10-05", "tags": ["delayed", "poor_communication"], "event_categories": []},
+  {"reviewer_id": "reviewer_045", "positivity": 0.90, "text": "Every performer delivered something extraordinary — this has become an unmissable annual event for our family.", "date": "2026-10-19", "tags": ["performance", "family_friendly"], "event_categories": ["music", "theater", "festival", "attraction"]},
+  {"reviewer_id": "reviewer_046", "positivity": 0.40, "text": "Ticket prices do not reflect the actual production values — feels like a premium charge for a mid-tier experience.", "date": "2026-11-02", "tags": ["overpriced", "poor_value"], "event_categories": []},
+  {"reviewer_id": "reviewer_047", "positivity": 0.76, "text": "Accessible entrances were well signed and staff were genuinely helpful to our group member using a wheelchair.", "date": "2026-11-16", "tags": ["accessibility", "staff"], "event_categories": []},
+  {"reviewer_id": "reviewer_048", "positivity": 0.29, "text": "Seating was first-come-first-served despite tickets having numbered seats printed on them — total chaos.", "date": "2026-11-30", "tags": ["disorganised", "seating"], "event_categories": ["music", "theater", "sports"]},
+  {"reviewer_id": "reviewer_049", "positivity": 0.87, "text": "The venue's natural amphitheatre setting made even quieter moments feel dramatic and resonant.", "date": "2026-12-14", "tags": ["venue", "atmosphere"], "event_categories": ["music", "theater"]},
+  {"reviewer_id": "reviewer_050", "positivity": 0.62, "text": "Solid community event with a genuine local flavour — not flashy but heartfelt.", "date": "2026-12-28", "tags": ["community", "local"], "event_categories": ["market", "culture", "food"]}
 ]

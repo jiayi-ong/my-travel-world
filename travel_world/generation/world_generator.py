@@ -44,7 +44,7 @@ class WorldGenerator:
         "num_restaurants_per_district": 5,
         "num_transport_hubs_per_city": 2,
         "date_range_days": 90,
-        "num_events_per_city": 20,
+        "num_events_per_city": 60,
         "num_flights_per_route": 10,
     }
 

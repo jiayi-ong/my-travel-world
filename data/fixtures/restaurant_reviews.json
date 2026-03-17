@@ -1,142 +1,52 @@
 [
-  {
-    "reviewer_id": "reviewer_001",
-    "rating": 4.7,
-    "text": "Authentic flavors and generous portions — this place serves the best regional cuisine I have tasted outside of a home kitchen.",
-    "date": "2025-01-10",
-    "tags": ["authentic", "generous_portions", "delicious"]
-  },
-  {
-    "reviewer_id": "reviewer_002",
-    "rating": 2.4,
-    "text": "Typical tourist trap near the main square. Mediocre food at inflated prices and the waiter seemed annoyed we were there.",
-    "date": "2025-01-29",
-    "tags": ["tourist_trap", "overpriced", "slow_service"]
-  },
-  {
-    "reviewer_id": "reviewer_003",
-    "rating": 4.5,
-    "text": "Romantic candlelit setting and exceptional pasta. The wine list is thoughtfully curated — perfect for a special evening.",
-    "date": "2025-02-15",
-    "tags": ["romantic", "delicious", "great_ambiance"]
-  },
-  {
-    "reviewer_id": "reviewer_004",
-    "rating": 3.2,
-    "text": "The food was decent but the portions were small for the price. Nice atmosphere though and the staff were polite.",
-    "date": "2025-03-03",
-    "tags": ["small_portions", "great_ambiance", "friendly_staff"]
-  },
-  {
-    "reviewer_id": "reviewer_005",
-    "rating": 1.8,
-    "text": "Waited 45 minutes for a starter that arrived cold. The manager was unapologetic when we raised the issue.",
-    "date": "2025-03-18",
-    "tags": ["slow_service", "overpriced"]
-  },
-  {
-    "reviewer_id": "reviewer_006",
-    "rating": 4.9,
-    "text": "A hidden gem in a side street away from the tourist crowds. The daily specials are outstanding and prices are very fair.",
-    "date": "2025-04-02",
-    "tags": ["hidden_gem", "delicious", "authentic"]
-  },
-  {
-    "reviewer_id": "reviewer_007",
-    "rating": 3.8,
-    "text": "Lively casual spot with a great selection of vegetarian dishes. The noise level makes conversation challenging but the food compensates.",
-    "date": "2025-04-17",
-    "tags": ["casual", "vegetarian_friendly", "noisy"]
-  },
-  {
-    "reviewer_id": "reviewer_008",
-    "rating": 4.3,
-    "text": "Generous portions and authentic home-style cooking. This is exactly the kind of neighbourhood restaurant every city needs more of.",
-    "date": "2025-05-01",
-    "tags": ["generous_portions", "authentic", "friendly_staff"]
-  },
-  {
-    "reviewer_id": "reviewer_009",
-    "rating": 2.9,
-    "text": "The menu promises a lot but the execution was underwhelming. Overpriced for what is essentially average food in a trendy space.",
-    "date": "2025-05-16",
-    "tags": ["overpriced", "slow_service"]
-  },
-  {
-    "reviewer_id": "reviewer_010",
-    "rating": 5.0,
-    "text": "Absolute perfection from start to finish. Every dish was beautifully presented and bursting with flavour. We are already planning our return.",
-    "date": "2025-06-01",
-    "tags": ["delicious", "great_ambiance", "romantic"]
-  },
-  {
-    "reviewer_id": "reviewer_011",
-    "rating": 4.1,
-    "text": "Great value lunch spot popular with locals. The daily set menu is always fresh and the staff make you feel at home.",
-    "date": "2025-06-20",
-    "tags": ["friendly_staff", "authentic", "casual"]
-  },
-  {
-    "reviewer_id": "reviewer_012",
-    "rating": 3.5,
-    "text": "Noisy and cramped on a Friday night but the tacos were genuinely good. Arrive early to beat the queues.",
-    "date": "2025-07-05",
-    "tags": ["noisy", "delicious", "casual"]
-  },
-  {
-    "reviewer_id": "reviewer_013",
-    "rating": 1.5,
-    "text": "Clearly aimed at tourists who do not know better. Frozen ingredients, slow service, and eye-watering prices.",
-    "date": "2025-07-22",
-    "tags": ["tourist_trap", "overpriced", "slow_service"]
-  },
-  {
-    "reviewer_id": "reviewer_014",
-    "rating": 4.6,
-    "text": "Excellent vegetarian-friendly menu with creative dishes that even my meat-eating companions raved about.",
-    "date": "2025-08-06",
-    "tags": ["vegetarian_friendly", "delicious", "great_ambiance"]
-  },
-  {
-    "reviewer_id": "reviewer_015",
-    "rating": 3.9,
-    "text": "Good portions and a warm atmosphere. The seafood platter was fresh and well-priced. A reliable neighbourhood choice.",
-    "date": "2025-08-21",
-    "tags": ["generous_portions", "friendly_staff", "casual"]
-  },
-  {
-    "reviewer_id": "reviewer_016",
-    "rating": 4.4,
-    "text": "The tasting menu was an adventure — seven courses of bold and inventive cooking. Not cheap but absolutely worth it for a special occasion.",
-    "date": "2025-09-09",
-    "tags": ["delicious", "romantic", "great_ambiance"]
-  },
-  {
-    "reviewer_id": "reviewer_017",
-    "rating": 2.6,
-    "text": "Small portions at big prices. The ambiance is stylish but the kitchen does not back it up. Left still hungry.",
-    "date": "2025-09-24",
-    "tags": ["small_portions", "overpriced"]
-  },
-  {
-    "reviewer_id": "reviewer_018",
-    "rating": 4.2,
-    "text": "Lively neighbourhood trattoria with genuine pasta made in-house. Noisy in the best possible way — full of locals having a great time.",
-    "date": "2025-10-13",
-    "tags": ["authentic", "noisy", "delicious"]
-  },
-  {
-    "reviewer_id": "reviewer_019",
-    "rating": 3.6,
-    "text": "Solid brunch spot with good coffee. Service was a touch slow but the avocado toast and eggs benedict were well done.",
-    "date": "2025-11-01",
-    "tags": ["casual", "friendly_staff", "slow_service"]
-  },
-  {
-    "reviewer_id": "reviewer_020",
-    "rating": 4.8,
-    "text": "Outstanding hidden gem with a menu that changes weekly. The chef sources everything locally and it shows in every bite.",
-    "date": "2025-12-08",
-    "tags": ["hidden_gem", "delicious", "authentic"]
-  }
+  {"reviewer_id": "reviewer_001", "positivity": 0.92, "text": "Exceptional flavours and generous portions — the tasting menu was a journey in itself.", "date": "2025-01-17", "tags": ["flavour", "portions"]},
+  {"reviewer_id": "reviewer_002", "positivity": 0.55, "text": "Solid cooking but the service pace was glacial for a 90-minute lunch slot.", "date": "2025-02-08", "tags": ["slow_service", "decent_food"]},
+  {"reviewer_id": "reviewer_003", "positivity": 0.18, "text": "Undercooked chicken and a dismissive waiter — I will not be returning.", "date": "2025-02-25", "tags": ["food_quality", "poor_service"]},
+  {"reviewer_id": "reviewer_004", "positivity": 0.90, "text": "The chef personally visited our table to explain each dish; cuisine was flawless.", "date": "2025-03-10", "tags": ["chef", "attentive"]},
+  {"reviewer_id": "reviewer_005", "positivity": 0.65, "text": "Reliable neighbourhood spot — nothing revolutionary but consistently good.", "date": "2025-03-28", "tags": ["reliable", "neighbourhood"]},
+  {"reviewer_id": "reviewer_006", "positivity": 0.30, "text": "Extremely noisy inside and the open-kitchen smells were overpowering at our table.", "date": "2025-04-12", "tags": ["noisy", "smells"]},
+  {"reviewer_id": "reviewer_007", "positivity": 0.85, "text": "Brilliant value for the quality — our bill was a third of what we expected to pay.", "date": "2025-04-30", "tags": ["value", "quality"]},
+  {"reviewer_id": "reviewer_008", "positivity": 0.42, "text": "Interesting menu but execution was inconsistent across courses.", "date": "2025-05-15", "tags": ["inconsistent", "menu"]},
+  {"reviewer_id": "reviewer_009", "positivity": 0.78, "text": "Lovely outdoor terrace and the sommelier's wine pairings were inspired.", "date": "2025-05-28", "tags": ["terrace", "wine"]},
+  {"reviewer_id": "reviewer_010", "positivity": 0.12, "text": "Waited 50 minutes for a starter and the main arrived lukewarm — avoid.", "date": "2025-06-10", "tags": ["wait_time", "temperature"]},
+  {"reviewer_id": "reviewer_011", "positivity": 0.88, "text": "Every dish was perfectly seasoned and the desserts were extraordinary.", "date": "2025-06-24", "tags": ["seasoning", "dessert"]},
+  {"reviewer_id": "reviewer_012", "positivity": 0.52, "text": "Mediocre but convenient — useful if you are in a hurry near the station.", "date": "2025-07-08", "tags": ["convenient", "mediocre"]},
+  {"reviewer_id": "reviewer_013", "positivity": 0.80, "text": "Buzzing atmosphere, charming staff, and a brunch menu that justifies the long wait.", "date": "2025-07-22", "tags": ["atmosphere", "brunch"]},
+  {"reviewer_id": "reviewer_014", "positivity": 0.25, "text": "A hidden service charge of 15% was added without warning — not acceptable.", "date": "2025-08-06", "tags": ["hidden_charges", "poor_value"]},
+  {"reviewer_id": "reviewer_015", "positivity": 0.95, "text": "The best meal of my entire trip — bold flavours, impeccable presentation, warm hospitality.", "date": "2025-08-20", "tags": ["flavour", "presentation", "hospitality"]},
+  {"reviewer_id": "reviewer_016", "positivity": 0.72, "text": "Superb fresh pasta made in-house — we watched the chef knead the dough through the open kitchen window.", "date": "2025-09-03", "tags": ["pasta", "open_kitchen"]},
+  {"reviewer_id": "reviewer_017", "positivity": 0.28, "text": "The 'locally sourced' claim felt hollow when the produce arrived clearly from a supermarket supplier.", "date": "2025-09-17", "tags": ["misleading", "quality"]},
+  {"reviewer_id": "reviewer_018", "positivity": 0.86, "text": "Lively atmosphere, generous tapas portions, and the staff paired our wine with genuine knowledge.", "date": "2025-10-01", "tags": ["atmosphere", "wine", "portions"]},
+  {"reviewer_id": "reviewer_019", "positivity": 0.48, "text": "Nice enough setting but the menu had not changed in over a year — time for some innovation.", "date": "2025-10-15", "tags": ["stale_menu", "average"]},
+  {"reviewer_id": "reviewer_020", "positivity": 0.93, "text": "A true neighbourhood gem — only twelve seats, a handwritten menu, and cooking that rivals the finest restaurants.", "date": "2025-10-29", "tags": ["intimate", "quality"]},
+  {"reviewer_id": "reviewer_021", "positivity": 0.38, "text": "Allergy information was vague and the server seemed unsure what was actually in each dish.", "date": "2025-11-12", "tags": ["allergy", "poor_service"]},
+  {"reviewer_id": "reviewer_022", "positivity": 0.81, "text": "Breakfasted here three mornings in a row — the granola, poached eggs, and house-baked bread were faultless.", "date": "2025-11-26", "tags": ["breakfast", "quality"]},
+  {"reviewer_id": "reviewer_023", "positivity": 0.20, "text": "Arrived at 7 pm to find half the menu already unavailable; what remained was over-salted.", "date": "2025-12-10", "tags": ["limited_menu", "food_quality"]},
+  {"reviewer_id": "reviewer_024", "positivity": 0.76, "text": "The slow-cooked lamb shoulder melted beautifully and the side dishes showed real thought.", "date": "2025-12-24", "tags": ["quality", "mains"]},
+  {"reviewer_id": "reviewer_025", "positivity": 0.55, "text": "Decent burgers but the fries arrived cold — seems the kitchen is not timing its orders well.", "date": "2026-01-07", "tags": ["average", "temperature"]},
+  {"reviewer_id": "reviewer_026", "positivity": 0.91, "text": "Outstanding sushi omakase — the chef sources fish daily and it absolutely shows in the freshness.", "date": "2026-01-20", "tags": ["sushi", "freshness"]},
+  {"reviewer_id": "reviewer_027", "positivity": 0.43, "text": "Brunch queue was forty minutes and the food barely justified the wait.", "date": "2026-02-03", "tags": ["wait_time", "poor_value"]},
+  {"reviewer_id": "reviewer_028", "positivity": 0.84, "text": "Elegant yet relaxed — the staff clearly love what they do and it shows in every interaction.", "date": "2026-02-17", "tags": ["atmosphere", "friendly_staff"]},
+  {"reviewer_id": "reviewer_029", "positivity": 0.17, "text": "Sticky menus, grimy tables, and a kitchen that smelled of old oil. Walked out before ordering.", "date": "2026-03-03", "tags": ["dirty", "poor_hygiene"]},
+  {"reviewer_id": "reviewer_030", "positivity": 0.67, "text": "Reliable curry house — not groundbreaking but the dhal makhani is genuinely excellent.", "date": "2026-03-17", "tags": ["reliable", "curry"]},
+  {"reviewer_id": "reviewer_031", "positivity": 0.89, "text": "The wood-fired oven gave everything a perfect char; the Neapolitan pizza base was exceptional.", "date": "2026-03-31", "tags": ["pizza", "quality"]},
+  {"reviewer_id": "reviewer_032", "positivity": 0.35, "text": "Rushed out by 8:30 pm despite having the table until 9 — felt like a conveyor belt, not dining.", "date": "2026-04-14", "tags": ["rushed", "poor_service"]},
+  {"reviewer_id": "reviewer_033", "positivity": 0.73, "text": "Wonderful vegan options that did not feel like afterthoughts — clearly a chef who thinks about every diner.", "date": "2026-04-27", "tags": ["vegan", "inclusive"]},
+  {"reviewer_id": "reviewer_034", "positivity": 0.24, "text": "The fish was clearly frozen despite being advertised as fresh; quite a disappointment at this price.", "date": "2026-05-11", "tags": ["misleading", "food_quality"]},
+  {"reviewer_id": "reviewer_035", "positivity": 0.82, "text": "Seated at a lovely corner table; the lamb kofta starter alone was worth the visit.", "date": "2026-05-25", "tags": ["starters", "atmosphere"]},
+  {"reviewer_id": "reviewer_036", "positivity": 0.50, "text": "Standard fare executed competently — a safe choice when you need somewhere reliable and central.", "date": "2026-06-08", "tags": ["reliable", "average"]},
+  {"reviewer_id": "reviewer_037", "positivity": 0.94, "text": "The tasting menu with wine flight was the culinary highlight of our month — every pairing was inspired.", "date": "2026-06-22", "tags": ["tasting_menu", "wine"]},
+  {"reviewer_id": "reviewer_038", "positivity": 0.40, "text": "Reservation was lost and the restaurant's solution was a two-hour wait — unacceptable.", "date": "2026-07-05", "tags": ["reservation_issue", "poor_service"]},
+  {"reviewer_id": "reviewer_039", "positivity": 0.78, "text": "The dim sum brunch was buzzing and the turnover of fresh dishes kept everything hot and plentiful.", "date": "2026-07-19", "tags": ["dim_sum", "brunch"]},
+  {"reviewer_id": "reviewer_040", "positivity": 0.30, "text": "The bill had an error that inflated it by 20% — the manager corrected it reluctantly after a long argument.", "date": "2026-08-02", "tags": ["billing_issue", "poor_service"]},
+  {"reviewer_id": "reviewer_041", "positivity": 0.87, "text": "Fragrant broths, tender meats, and a chilli sauce so good we asked for the recipe.", "date": "2026-08-16", "tags": ["flavour", "broth"]},
+  {"reviewer_id": "reviewer_042", "positivity": 0.62, "text": "Good for groups — the sharing platters encouraged conversation and the wine list was reasonably priced.", "date": "2026-08-30", "tags": ["groups", "sharing"]},
+  {"reviewer_id": "reviewer_043", "positivity": 0.14, "text": "Flies around the salad bar in an open terrace setting — management seemed unfazed.", "date": "2026-09-13", "tags": ["hygiene", "poor_service"]},
+  {"reviewer_id": "reviewer_044", "positivity": 0.88, "text": "Each dessert was a tiny work of art; the chocolate fondant with salted caramel ice cream was flawless.", "date": "2026-09-27", "tags": ["dessert", "presentation"]},
+  {"reviewer_id": "reviewer_045", "positivity": 0.46, "text": "Nice atmosphere but the kitchen was very slow — two hours for three courses on a quiet Tuesday.", "date": "2026-10-11", "tags": ["slow_service", "atmosphere"]},
+  {"reviewer_id": "reviewer_046", "positivity": 0.79, "text": "Beautifully plated North African dishes; the tagine had just the right balance of sweet and savoury.", "date": "2026-10-25", "tags": ["presentation", "flavour"]},
+  {"reviewer_id": "reviewer_047", "positivity": 0.33, "text": "No real vegetarian options — the 'vegetarian' pasta contained hidden anchovies. Very poor labelling.", "date": "2026-11-08", "tags": ["vegetarian", "misleading"]},
+  {"reviewer_id": "reviewer_048", "positivity": 0.91, "text": "The rooftop location gave us a magical sunset dinner; the seafood platter was an extraordinary spread.", "date": "2026-11-22", "tags": ["views", "seafood"]},
+  {"reviewer_id": "reviewer_049", "positivity": 0.57, "text": "Functional lunch spot near the office district — nothing special but efficient service and fair pricing.", "date": "2026-12-06", "tags": ["convenient", "average"]},
+  {"reviewer_id": "reviewer_050", "positivity": 0.83, "text": "A masterclass in Korean barbecue — the marinated cuts arrived perfectly portioned and the banchan selection was extensive.", "date": "2026-12-20", "tags": ["barbecue", "portions"]}
 ]

@@ -58,6 +58,7 @@ class Review(BaseModel):
 
     reviewer_id: str
     rating: float = Field(ge=1.0, le=5.0)
+    positivity: float = Field(default=0.5, ge=0.0, le=1.0)  # 0=very negative, 1=very positive
     text: str
     date: str  # ISO date string "YYYY-MM-DD"
     tags: list[str] = []
@@ -147,6 +148,10 @@ class City(BaseModel):
     transport_quality: float = Field(ge=0.0, le=1.0)
     description: str = ""
     timezone: str = "UTC"
+    travel_advisory: str = ""  # Official tiered advisory text
+    dominant_cuisines: list[str] = []
+    dominant_event_categories: list[str] = []
+    vibe_summary: str = ""
 
 
 class District(BaseModel):
@@ -167,6 +172,7 @@ class District(BaseModel):
     noise_level: float = Field(ge=0.0, le=1.0)
     cost_index: float = Field(ge=0.0)  # relative; 1.0 = city average
     description: str = ""
+    reviews: list[Review] = []  # Visitor reviews including subjective safety observations
 
 
 # ---------------------------------------------------------------------------
@@ -217,8 +223,10 @@ class Hotel(Location):
     room_types: dict[str, float] = {}  # room_name -> price_multiplier
     total_rooms: int
     neighborhood_score: float
-    check_in_time: str = "15:00"
+    check_in_time: str = "13:00"
     check_out_time: str = "11:00"
+    num_beds: int = 1
+    airport_shuttle: bool = False
 
 
 class Attraction(Location):
@@ -361,6 +369,8 @@ class Event(BaseModel):
     capacity: int
     base_ticket_price: float
     popularity: float = Field(ge=0.0, le=1.0)
+    requires_booking: bool = True   # False for free-entry attractions (parks, beaches, etc.)
+    is_all_day_entry: bool = False  # True for attractions open all day with no fixed show time
     description: str = ""
     tags: list[str] = []
     ratings: RatingsSummary | None = None
