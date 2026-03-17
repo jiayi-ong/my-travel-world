@@ -1,0 +1,142 @@
+[
+  {
+    "reviewer_id": "reviewer_001",
+    "rating": 4.7,
+    "text": "Authentic flavors and generous portions — this place serves the best regional cuisine I have tasted outside of a home kitchen.",
+    "date": "2025-01-10",
+    "tags": ["authentic", "generous_portions", "delicious"]
+  },
+  {
+    "reviewer_id": "reviewer_002",
+    "rating": 2.4,
+    "text": "Typical tourist trap near the main square. Mediocre food at inflated prices and the waiter seemed annoyed we were there.",
+    "date": "2025-01-29",
+    "tags": ["tourist_trap", "overpriced", "slow_service"]
+  },
+  {
+    "reviewer_id": "reviewer_003",
+    "rating": 4.5,
+    "text": "Romantic candlelit setting and exceptional pasta. The wine list is thoughtfully curated — perfect for a special evening.",
+    "date": "2025-02-15",
+    "tags": ["romantic", "delicious", "great_ambiance"]
+  },
+  {
+    "reviewer_id": "reviewer_004",
+    "rating": 3.2,
+    "text": "The food was decent but the portions were small for the price. Nice atmosphere though and the staff were polite.",
+    "date": "2025-03-03",
+    "tags": ["small_portions", "great_ambiance", "friendly_staff"]
+  },
+  {
+    "reviewer_id": "reviewer_005",
+    "rating": 1.8,
+    "text": "Waited 45 minutes for a starter that arrived cold. The manager was unapologetic when we raised the issue.",
+    "date": "2025-03-18",
+    "tags": ["slow_service", "overpriced"]
+  },
+  {
+    "reviewer_id": "reviewer_006",
+    "rating": 4.9,
+    "text": "A hidden gem in a side street away from the tourist crowds. The daily specials are outstanding and prices are very fair.",
+    "date": "2025-04-02",
+    "tags": ["hidden_gem", "delicious", "authentic"]
+  },
+  {
+    "reviewer_id": "reviewer_007",
+    "rating": 3.8,
+    "text": "Lively casual spot with a great selection of vegetarian dishes. The noise level makes conversation challenging but the food compensates.",
+    "date": "2025-04-17",
+    "tags": ["casual", "vegetarian_friendly", "noisy"]
+  },
+  {
+    "reviewer_id": "reviewer_008",
+    "rating": 4.3,
+    "text": "Generous portions and authentic home-style cooking. This is exactly the kind of neighbourhood restaurant every city needs more of.",
+    "date": "2025-05-01",
+    "tags": ["generous_portions", "authentic", "friendly_staff"]
+  },
+  {
+    "reviewer_id": "reviewer_009",
+    "rating": 2.9,
+    "text": "The menu promises a lot but the execution was underwhelming. Overpriced for what is essentially average food in a trendy space.",
+    "date": "2025-05-16",
+    "tags": ["overpriced", "slow_service"]
+  },
+  {
+    "reviewer_id": "reviewer_010",
+    "rating": 5.0,
+    "text": "Absolute perfection from start to finish. Every dish was beautifully presented and bursting with flavour. We are already planning our return.",
+    "date": "2025-06-01",
+    "tags": ["delicious", "great_ambiance", "romantic"]
+  },
+  {
+    "reviewer_id": "reviewer_011",
+    "rating": 4.1,
+    "text": "Great value lunch spot popular with locals. The daily set menu is always fresh and the staff make you feel at home.",
+    "date": "2025-06-20",
+    "tags": ["friendly_staff", "authentic", "casual"]
+  },
+  {
+    "reviewer_id": "reviewer_012",
+    "rating": 3.5,
+    "text": "Noisy and cramped on a Friday night but the tacos were genuinely good. Arrive early to beat the queues.",
+    "date": "2025-07-05",
+    "tags": ["noisy", "delicious", "casual"]
+  },
+  {
+    "reviewer_id": "reviewer_013",
+    "rating": 1.5,
+    "text": "Clearly aimed at tourists who do not know better. Frozen ingredients, slow service, and eye-watering prices.",
+    "date": "2025-07-22",
+    "tags": ["tourist_trap", "overpriced", "slow_service"]
+  },
+  {
+    "reviewer_id": "reviewer_014",
+    "rating": 4.6,
+    "text": "Excellent vegetarian-friendly menu with creative dishes that even my meat-eating companions raved about.",
+    "date": "2025-08-06",
+    "tags": ["vegetarian_friendly", "delicious", "great_ambiance"]
+  },
+  {
+    "reviewer_id": "reviewer_015",
+    "rating": 3.9,
+    "text": "Good portions and a warm atmosphere. The seafood platter was fresh and well-priced. A reliable neighbourhood choice.",
+    "date": "2025-08-21",
+    "tags": ["generous_portions", "friendly_staff", "casual"]
+  },
+  {
+    "reviewer_id": "reviewer_016",
+    "rating": 4.4,
+    "text": "The tasting menu was an adventure — seven courses of bold and inventive cooking. Not cheap but absolutely worth it for a special occasion.",
+    "date": "2025-09-09",
+    "tags": ["delicious", "romantic", "great_ambiance"]
+  },
+  {
+    "reviewer_id": "reviewer_017",
+    "rating": 2.6,
+    "text": "Small portions at big prices. The ambiance is stylish but the kitchen does not back it up. Left still hungry.",
+    "date": "2025-09-24",
+    "tags": ["small_portions", "overpriced"]
+  },
+  {
+    "reviewer_id": "reviewer_018",
+    "rating": 4.2,
+    "text": "Lively neighbourhood trattoria with genuine pasta made in-house. Noisy in the best possible way — full of locals having a great time.",
+    "date": "2025-10-13",
+    "tags": ["authentic", "noisy", "delicious"]
+  },
+  {
+    "reviewer_id": "reviewer_019",
+    "rating": 3.6,
+    "text": "Solid brunch spot with good coffee. Service was a touch slow but the avocado toast and eggs benedict were well done.",
+    "date": "2025-11-01",
+    "tags": ["casual", "friendly_staff", "slow_service"]
+  },
+  {
+    "reviewer_id": "reviewer_020",
+    "rating": 4.8,
+    "text": "Outstanding hidden gem with a menu that changes weekly. The chef sources everything locally and it shows in every bite.",
+    "date": "2025-12-08",
+    "tags": ["hidden_gem", "delicious", "authentic"]
+  }
+]

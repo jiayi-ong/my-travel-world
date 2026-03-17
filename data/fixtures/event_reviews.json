@@ -1,0 +1,107 @@
+[
+  {
+    "reviewer_id": "reviewer_001",
+    "rating": 4.9,
+    "text": "The atmosphere was electric from the moment we arrived. The lineup exceeded our expectations and the crowd energy was infectious.",
+    "date": "2025-01-20",
+    "tags": ["amazing_atmosphere", "great_lineup", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_002",
+    "rating": 2.2,
+    "text": "Total chaos — no clear signage, queues were disorganised, and we missed the opening act due to slow entry.",
+    "date": "2025-02-08",
+    "tags": ["chaotic", "crowded", "disappointing"]
+  },
+  {
+    "reviewer_id": "reviewer_003",
+    "rating": 4.5,
+    "text": "Perfectly family-friendly event with activities for all ages. The kids loved the interactive zones and we never felt unsafe.",
+    "date": "2025-02-28",
+    "tags": ["family_friendly", "well_organized", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_004",
+    "rating": 3.3,
+    "text": "Good event overall but the ticket price felt steep for what was offered. The headline performance was great but supporting acts were weak.",
+    "date": "2025-03-15",
+    "tags": ["overpriced_tickets", "great_lineup", "crowded"]
+  },
+  {
+    "reviewer_id": "reviewer_005",
+    "rating": 5.0,
+    "text": "Completely immersive experience — every detail was thought through. Left feeling inspired and already looking forward to next year.",
+    "date": "2025-04-04",
+    "tags": ["immersive", "amazing_atmosphere", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_006",
+    "rating": 1.8,
+    "text": "A very disappointing show. The advertised headliner cancelled last minute and the replacement was far below standard.",
+    "date": "2025-04-20",
+    "tags": ["disappointing", "overpriced_tickets"]
+  },
+  {
+    "reviewer_id": "reviewer_007",
+    "rating": 4.3,
+    "text": "Well-organised sporting event with great crowd management. The facilities were accessible and the competition was thrilling.",
+    "date": "2025-05-12",
+    "tags": ["well_organized", "accessible", "amazing_atmosphere"]
+  },
+  {
+    "reviewer_id": "reviewer_008",
+    "rating": 3.7,
+    "text": "Enjoyable evening but the venue was clearly over capacity. Sound quality suffered and it was hard to see the stage.",
+    "date": "2025-06-02",
+    "tags": ["crowded", "great_lineup", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_009",
+    "rating": 4.6,
+    "text": "An intimate and beautifully curated cultural festival. Small enough to feel personal yet rich enough to fill an entire weekend.",
+    "date": "2025-06-28",
+    "tags": ["immersive", "well_organized", "amazing_atmosphere"]
+  },
+  {
+    "reviewer_id": "reviewer_010",
+    "rating": 2.8,
+    "text": "The adult-only designation was not enforced at the door and the event lost its character as a result. Poorly managed entry.",
+    "date": "2025-07-14",
+    "tags": ["adult_only", "chaotic", "disappointing"]
+  },
+  {
+    "reviewer_id": "reviewer_011",
+    "rating": 4.1,
+    "text": "Great accessibility provisions — clear signage, wheelchair-friendly routes, and helpful volunteers throughout the venue.",
+    "date": "2025-08-03",
+    "tags": ["accessible", "well_organized", "family_friendly"]
+  },
+  {
+    "reviewer_id": "reviewer_012",
+    "rating": 4.7,
+    "text": "The highlight of our trip. Energetic performances, fantastic food stalls, and a crowd that was there for the right reasons.",
+    "date": "2025-09-06",
+    "tags": ["amazing_atmosphere", "great_lineup", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_013",
+    "rating": 3.5,
+    "text": "A solid event but it peaked early and the final hours felt sparse. Worth attending for the afternoon sessions at minimum.",
+    "date": "2025-10-18",
+    "tags": ["worth_it", "crowded", "well_organized"]
+  },
+  {
+    "reviewer_id": "reviewer_014",
+    "rating": 4.4,
+    "text": "Genuinely immersive theatre production — the boundary between audience and performer was deliberately blurred in the best way.",
+    "date": "2025-11-09",
+    "tags": ["immersive", "amazing_atmosphere", "adult_only"]
+  },
+  {
+    "reviewer_id": "reviewer_015",
+    "rating": 2.5,
+    "text": "Ticket prices have doubled since last year with no noticeable improvement. The event is coasting on its reputation at this point.",
+    "date": "2025-12-06",
+    "tags": ["overpriced_tickets", "disappointing", "crowded"]
+  }
+]

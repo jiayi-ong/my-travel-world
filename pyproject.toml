@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "travel_world"
+version = "0.1.0"
+description = "A synthetic travel world simulation for LLM agent research."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "fastapi",
+    "uvicorn",
+    "networkx",
+    "streamlit",
+    "folium",
+    "streamlit-folium",
+    "httpx",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["travel_world*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

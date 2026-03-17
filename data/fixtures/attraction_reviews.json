@@ -1,0 +1,142 @@
+[
+  {
+    "reviewer_id": "reviewer_001",
+    "rating": 4.8,
+    "text": "The panoramic views from the observation deck took our breath away. Worth every penny and the queues moved quickly.",
+    "date": "2025-01-08",
+    "tags": ["stunning_views", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_002",
+    "rating": 2.3,
+    "text": "Hugely disappointing — the main exhibit was closed for renovation and no one mentioned it on the website.",
+    "date": "2025-01-27",
+    "tags": ["overrated", "skip_it"]
+  },
+  {
+    "reviewer_id": "reviewer_003",
+    "rating": 4.5,
+    "text": "A hidden gem tucked away in the old quarter. We were the only visitors for most of our time there and it was magical.",
+    "date": "2025-02-14",
+    "tags": ["hidden_gem", "peaceful", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_004",
+    "rating": 3.1,
+    "text": "Very touristy and overcrowded on a Saturday afternoon. The attraction itself is interesting but the experience suffers from the crowds.",
+    "date": "2025-02-28",
+    "tags": ["crowded", "touristy"]
+  },
+  {
+    "reviewer_id": "reviewer_005",
+    "rating": 5.0,
+    "text": "One of the most interactive museums I have ever visited. My kids were engaged for three hours straight — incredible for ages 6 and 9.",
+    "date": "2025-03-16",
+    "tags": ["interactive", "kid_friendly", "educational"]
+  },
+  {
+    "reviewer_id": "reviewer_006",
+    "rating": 4.2,
+    "text": "Free to enter and genuinely fascinating. The permanent collection rivals many paid museums I have visited.",
+    "date": "2025-03-30",
+    "tags": ["free", "educational", "well_maintained"]
+  },
+  {
+    "reviewer_id": "reviewer_007",
+    "rating": 1.9,
+    "text": "The ticket price is outrageous for a 20-minute experience. Feels like a tourist trap with no real substance.",
+    "date": "2025-04-12",
+    "tags": ["expensive", "touristy", "overrated"]
+  },
+  {
+    "reviewer_id": "reviewer_008",
+    "rating": 4.6,
+    "text": "Beautifully maintained gardens with spectacular seasonal blooms. An absolute must-visit in spring.",
+    "date": "2025-04-26",
+    "tags": ["well_maintained", "stunning_views", "peaceful"]
+  },
+  {
+    "reviewer_id": "reviewer_009",
+    "rating": 3.4,
+    "text": "Interesting enough for adults but not much for younger children. Plan for about 90 minutes.",
+    "date": "2025-05-10",
+    "tags": ["educational", "crowded"]
+  },
+  {
+    "reviewer_id": "reviewer_010",
+    "rating": 4.9,
+    "text": "Genuinely one of the most stunning natural viewpoints I have ever seen. Go at sunrise if you can — absolutely worth the early alarm.",
+    "date": "2025-05-25",
+    "tags": ["stunning_views", "worth_it", "hidden_gem"]
+  },
+  {
+    "reviewer_id": "reviewer_011",
+    "rating": 2.7,
+    "text": "Skip it unless you have exhausted every other option in the city. The exhibits are poorly labeled and the building is dingy.",
+    "date": "2025-06-08",
+    "tags": ["skip_it", "overrated"]
+  },
+  {
+    "reviewer_id": "reviewer_012",
+    "rating": 4.3,
+    "text": "A peaceful retreat from the city bustle. The meditation garden in the back is a genuine hidden gem.",
+    "date": "2025-06-22",
+    "tags": ["peaceful", "hidden_gem", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_013",
+    "rating": 3.8,
+    "text": "Well-run interactive science center. A little pricey but the hands-on exhibits kept our group entertained for hours.",
+    "date": "2025-07-07",
+    "tags": ["interactive", "kid_friendly", "expensive"]
+  },
+  {
+    "reviewer_id": "reviewer_014",
+    "rating": 4.0,
+    "text": "The historical exhibits are genuinely educational and the audio guide is excellent. Gets crowded around midday.",
+    "date": "2025-07-21",
+    "tags": ["educational", "crowded", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_015",
+    "rating": 1.6,
+    "text": "Poorly maintained paths and half the signs were damaged or missing. The views are fine but the lack of upkeep is frustrating.",
+    "date": "2025-08-04",
+    "tags": ["skip_it", "overrated"]
+  },
+  {
+    "reviewer_id": "reviewer_016",
+    "rating": 4.7,
+    "text": "Free entry and one of the best collections in the region. Quiet on weekday mornings — perfect for a leisurely visit.",
+    "date": "2025-08-18",
+    "tags": ["free", "educational", "peaceful"]
+  },
+  {
+    "reviewer_id": "reviewer_017",
+    "rating": 3.6,
+    "text": "Solid tourist attraction with good facilities. Not groundbreaking but a pleasant way to spend a couple of hours.",
+    "date": "2025-09-02",
+    "tags": ["touristy", "well_maintained", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_018",
+    "rating": 4.4,
+    "text": "Breathtaking coastal views and well-kept walking trails. We spotted three species of birds we had never seen before.",
+    "date": "2025-09-17",
+    "tags": ["stunning_views", "peaceful", "worth_it"]
+  },
+  {
+    "reviewer_id": "reviewer_019",
+    "rating": 2.9,
+    "text": "The attraction is outdoors which makes it weather-dependent. On the grey day we visited it felt bleak and overpriced.",
+    "date": "2025-10-30",
+    "tags": ["expensive", "overrated"]
+  },
+  {
+    "reviewer_id": "reviewer_020",
+    "rating": 4.1,
+    "text": "Great interactive displays and a very child-friendly layout. The staff were enthusiastic and clearly loved what they do.",
+    "date": "2025-11-20",
+    "tags": ["interactive", "kid_friendly", "educational"]
+  }
+]

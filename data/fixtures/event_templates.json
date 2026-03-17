@@ -1,0 +1,122 @@
+[
+  {
+    "category": "music",
+    "name": "K-pop Galaxy Tour",
+    "description": "The world-sensation aespa is in town! Get ready for an unforgettable night of dynamic electronic dance music and stunning holographic visuals.",
+    "rating": 4.8
+  },
+  {
+    "category": "music",
+    "name": "Jazz Under the Stars",
+    "description": "Grammy-winning trumpeter Marcus Cole leads a quartet through classic Coltrane, Miles Davis, and original compositions beneath an open sky.",
+    "rating": 4.5
+  },
+  {
+    "category": "music",
+    "name": "Electronic Beats Festival",
+    "description": "Three stages, twelve DJs, and a laser show that runs all night. Top acts from Berlin's underground scene headline this pulse-pounding electronic showcase.",
+    "rating": 4.3
+  },
+  {
+    "category": "music",
+    "name": "Classical Gala Evening",
+    "description": "The City Philharmonic performs Beethoven's 9th Symphony and Rachmaninoff's Piano Concerto No. 2 in a breathtaking candlelit hall.",
+    "rating": 4.7
+  },
+  {
+    "category": "music",
+    "name": "Folk & Roots Gathering",
+    "description": "Celebrate the roots of acoustic music with storytelling songwriters from across the globe, sharing ballads, blues, and bluegrass on an intimate outdoor stage.",
+    "rating": 4.2
+  },
+  {
+    "category": "food",
+    "name": "World Street Food Carnival",
+    "description": "Over 80 vendors from 30 countries bring their signature dishes to one sprawling open-air market — from Taiwanese scallion pancakes to Peruvian ceviche.",
+    "rating": 4.6
+  },
+  {
+    "category": "food",
+    "name": "Wine & Cheese Masterclass",
+    "description": "A Michelin-starred sommelier guides guests through rare bottles paired with artisan cheeses, revealing the science and art behind perfect flavor harmony.",
+    "rating": 4.4
+  },
+  {
+    "category": "food",
+    "name": "Ramen Showdown",
+    "description": "Ten ramen chefs compete head-to-head for the title of best bowl in the city. Guests vote, judges deliberate, and everyone leaves full.",
+    "rating": 4.5
+  },
+  {
+    "category": "food",
+    "name": "Farm-to-Table Harvest Dinner",
+    "description": "Held on an actual working farm, this five-course dinner uses ingredients harvested that very morning, prepared by a rotating cast of local chefs.",
+    "rating": 4.9
+  },
+  {
+    "category": "culture",
+    "name": "Ancient Civilizations Exhibition",
+    "description": "A stunning collection of artefacts on loan from the British Museum and the Louvre traces humanity's earliest cities — from Mesopotamia to the Indus Valley.",
+    "rating": 4.6
+  },
+  {
+    "category": "culture",
+    "name": "International Film Noir Festival",
+    "description": "Five days of classic and contemporary noir from 20 countries, with director Q&As, restored 35mm screenings, and late-night double features.",
+    "rating": 4.3
+  },
+  {
+    "category": "sports",
+    "name": "City Half Marathon",
+    "description": "21 km through the city's most iconic neighbourhoods, with live bands at every kilometre marker and a rooftop finish-line party for all finishers.",
+    "rating": 4.7
+  },
+  {
+    "category": "sports",
+    "name": "Beach Volleyball Open",
+    "description": "Elite beach volleyball teams from across the region compete on courts set up right on the waterfront — free entry for spectators.",
+    "rating": 4.2
+  },
+  {
+    "category": "festival",
+    "name": "Lantern Sky Festival",
+    "description": "Thousands of hand-painted sky lanterns are released simultaneously at dusk in a breathtaking tradition that lights up the entire horizon.",
+    "rating": 4.9
+  },
+  {
+    "category": "festival",
+    "name": "Cherry Blossom Night Market",
+    "description": "Celebrate peak bloom with a twilight market under illuminated sakura trees — traditional sake, street food, and live shamisen performances throughout.",
+    "rating": 4.8
+  },
+  {
+    "category": "exhibition",
+    "name": "Immersive Van Gogh",
+    "description": "Walk inside the brushstrokes of van Gogh's masterworks as floor-to-ceiling 3D projections transform the gallery into Starry Night and Sunflowers.",
+    "rating": 4.7
+  },
+  {
+    "category": "theater",
+    "name": "Hamlet: Reimagined",
+    "description": "A boundary-pushing director stages Shakespeare's Hamlet in a dystopian near-future, with a gender-swapped cast and an original score by an electronic composer.",
+    "rating": 4.5
+  },
+  {
+    "category": "comedy",
+    "name": "International Stand-Up Night",
+    "description": "Six comedians from six continents take the stage for a two-hour showcase of wildly different humour styles — slapstick, dark comedy, and sharp political satire.",
+    "rating": 4.4
+  },
+  {
+    "category": "market",
+    "name": "Artisan Crafts & Vintage Fair",
+    "description": "Over 200 stalls of handmade jewellery, vintage clothing, rare books, and bespoke homeware from independent makers across the region.",
+    "rating": 4.3
+  },
+  {
+    "category": "market",
+    "name": "Organic Farmers Market",
+    "description": "Every Sunday, local farmers bring fresh seasonal produce, homemade preserves, and foraged ingredients directly to city-centre buyers — no middlemen, all flavour.",
+    "rating": 4.6
+  }
+]

@@ -1,0 +1,142 @@
+[
+  {
+    "reviewer_id": "reviewer_001",
+    "rating": 4.5,
+    "text": "The staff went out of their way to make us feel welcome from check-in to checkout. Rooms were immaculate and the bed was incredibly comfortable.",
+    "date": "2025-01-14",
+    "tags": ["friendly_staff", "clean", "comfortable"]
+  },
+  {
+    "reviewer_id": "reviewer_002",
+    "rating": 3.2,
+    "text": "Decent location close to the main square, but the room was smaller than the photos suggested. Breakfast was a highlight though.",
+    "date": "2025-02-03",
+    "tags": ["good_location", "small_rooms", "breakfast_good"]
+  },
+  {
+    "reviewer_id": "reviewer_003",
+    "rating": 1.8,
+    "text": "Noisy corridor all night and the air conditioning unit rattled constantly. Would not stay here again.",
+    "date": "2025-02-22",
+    "tags": ["noisy", "poor_service"]
+  },
+  {
+    "reviewer_id": "reviewer_004",
+    "rating": 4.8,
+    "text": "Absolutely stunning modern design throughout the hotel. The rooftop bar alone is worth the price.",
+    "date": "2025-03-07",
+    "tags": ["modern", "great_value", "comfortable"]
+  },
+  {
+    "reviewer_id": "reviewer_005",
+    "rating": 3.7,
+    "text": "A solid mid-range option with friendly staff. The decor is a bit dated but everything was clean and functional.",
+    "date": "2025-03-28",
+    "tags": ["friendly_staff", "clean", "dated_decor"]
+  },
+  {
+    "reviewer_id": "reviewer_006",
+    "rating": 2.5,
+    "text": "The price was steep for what we got — tiny bathroom, thin walls, and a view of a parking garage. Not worth it.",
+    "date": "2025-04-11",
+    "tags": ["overpriced", "small_rooms", "noisy"]
+  },
+  {
+    "reviewer_id": "reviewer_007",
+    "rating": 4.2,
+    "text": "Great location right on the waterfront. Spacious rooms with lovely views — would definitely return.",
+    "date": "2025-04-30",
+    "tags": ["good_location", "spacious", "quiet"]
+  },
+  {
+    "reviewer_id": "reviewer_008",
+    "rating": 3.5,
+    "text": "The breakfast spread was impressive and the common areas were well maintained, but the room itself felt a little tired.",
+    "date": "2025-05-15",
+    "tags": ["breakfast_good", "clean", "dated_decor"]
+  },
+  {
+    "reviewer_id": "reviewer_009",
+    "rating": 5.0,
+    "text": "One of the best hotels I have ever stayed in. Flawless service, beautiful rooms, and the spa was exceptional.",
+    "date": "2025-05-29",
+    "tags": ["friendly_staff", "comfortable", "modern"]
+  },
+  {
+    "reviewer_id": "reviewer_010",
+    "rating": 2.1,
+    "text": "The front desk was dismissive when I raised a maintenance issue and it took two days to fix a broken shower. Poor service overall.",
+    "date": "2025-06-10",
+    "tags": ["poor_service", "noisy"]
+  },
+  {
+    "reviewer_id": "reviewer_011",
+    "rating": 4.0,
+    "text": "Excellent value for the price. Clean, comfortable, and very conveniently located near public transport.",
+    "date": "2025-06-25",
+    "tags": ["great_value", "clean", "good_location"]
+  },
+  {
+    "reviewer_id": "reviewer_012",
+    "rating": 3.8,
+    "text": "Quiet and peaceful hotel away from the tourist crowds. Rooms are spacious but the breakfast options are limited.",
+    "date": "2025-07-09",
+    "tags": ["quiet", "spacious", "breakfast_good"]
+  },
+  {
+    "reviewer_id": "reviewer_013",
+    "rating": 1.5,
+    "text": "Found the room to be musty and not properly cleaned. The corridors smelled of cigarette smoke despite the no-smoking policy.",
+    "date": "2025-07-24",
+    "tags": ["poor_service", "noisy"]
+  },
+  {
+    "reviewer_id": "reviewer_014",
+    "rating": 4.6,
+    "text": "Wonderful boutique hotel with thoughtful decor and genuinely attentive staff. The homemade breakfast was a real treat.",
+    "date": "2025-08-05",
+    "tags": ["friendly_staff", "breakfast_good", "comfortable"]
+  },
+  {
+    "reviewer_id": "reviewer_015",
+    "rating": 3.3,
+    "text": "Fair price and clean rooms, but the Wi-Fi was unreliable and the gym equipment was outdated.",
+    "date": "2025-08-20",
+    "tags": ["clean", "great_value", "dated_decor"]
+  },
+  {
+    "reviewer_id": "reviewer_016",
+    "rating": 4.1,
+    "text": "Modern facilities and a great central location. The rooms are on the smaller side but very cleverly designed.",
+    "date": "2025-09-04",
+    "tags": ["modern", "good_location", "small_rooms"]
+  },
+  {
+    "reviewer_id": "reviewer_017",
+    "rating": 2.8,
+    "text": "Overpriced compared to similar hotels nearby. The room was clean but nothing special for the rate we paid.",
+    "date": "2025-09-19",
+    "tags": ["overpriced", "clean"]
+  },
+  {
+    "reviewer_id": "reviewer_018",
+    "rating": 4.4,
+    "text": "Stayed here for a week and felt completely at home. Staff remembered our names and preferences after the first day.",
+    "date": "2025-10-08",
+    "tags": ["friendly_staff", "comfortable", "quiet"]
+  },
+  {
+    "reviewer_id": "reviewer_019",
+    "rating": 3.9,
+    "text": "Good-value hotel in a quiet neighborhood. Rooms are spacious and the blackout curtains mean a great night's sleep.",
+    "date": "2025-11-14",
+    "tags": ["great_value", "spacious", "quiet"]
+  },
+  {
+    "reviewer_id": "reviewer_020",
+    "rating": 4.7,
+    "text": "Exceptional breakfast with local produce and the room had a stunning city view. Perfect base for exploring.",
+    "date": "2025-12-02",
+    "tags": ["breakfast_good", "good_location", "modern"]
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "reviewer_id": "reviewer_001",
+    "rating": 4.6,
+    "text": "Boarded ahead of schedule and the crew were warm and attentive throughout. Arrived 15 minutes early — great start to the trip.",
+    "date": "2025-01-12",
+    "tags": ["on_time", "friendly_crew", "efficient_boarding"]
+  },
+  {
+    "reviewer_id": "reviewer_002",
+    "rating": 2.1,
+    "text": "Two-hour delay with no communication from the airline until we were already at the gate. Missed our connection as a result.",
+    "date": "2025-01-30",
+    "tags": ["delayed", "poor_service"]
+  },
+  {
+    "reviewer_id": "reviewer_003",
+    "rating": 4.8,
+    "text": "Comfortable seats even in economy, smooth flight throughout, and the meal was genuinely enjoyable. Would fly with them again.",
+    "date": "2025-02-18",
+    "tags": ["comfortable_seats", "smooth_flight", "good_food"]
+  },
+  {
+    "reviewer_id": "reviewer_004",
+    "rating": 3.4,
+    "text": "On time but the legroom was almost non-existent on the three-hour flight. Fine for short hops, painful for anything longer.",
+    "date": "2025-03-07",
+    "tags": ["on_time", "cramped"]
+  },
+  {
+    "reviewer_id": "reviewer_005",
+    "rating": 1.7,
+    "text": "Luggage did not arrive at destination. After three days of chasing the airline, it turned up with no apology or compensation offered.",
+    "date": "2025-03-24",
+    "tags": ["lost_luggage", "poor_service"]
+  },
+  {
+    "reviewer_id": "reviewer_006",
+    "rating": 4.2,
+    "text": "Efficient boarding process and a clean cabin. The crew handled a slightly bumpy patch over the mountains with calm professionalism.",
+    "date": "2025-04-09",
+    "tags": ["efficient_boarding", "clean", "friendly_crew"]
+  },
+  {
+    "reviewer_id": "reviewer_007",
+    "rating": 4.9,
+    "text": "Best long-haul experience I have had. Flat-bed seats, exceptional food and wine, and crew who seemed to genuinely enjoy their work.",
+    "date": "2025-04-28",
+    "tags": ["comfortable_seats", "good_food", "friendly_crew"]
+  },
+  {
+    "reviewer_id": "reviewer_008",
+    "rating": 3.0,
+    "text": "Flight was an hour late departing and the cabin was stuffy. The crew did their best but the aircraft felt dated.",
+    "date": "2025-05-14",
+    "tags": ["delayed", "cramped"]
+  },
+  {
+    "reviewer_id": "reviewer_009",
+    "rating": 4.4,
+    "text": "Very smooth flight despite forecast turbulence. The pilot kept us informed throughout and the crew remained cheerful.",
+    "date": "2025-05-31",
+    "tags": ["smooth_flight", "friendly_crew", "on_time"]
+  },
+  {
+    "reviewer_id": "reviewer_010",
+    "rating": 2.6,
+    "text": "Cramped middle seat with a broken recline mechanism. Raised it with the crew who said there was nothing they could do mid-flight.",
+    "date": "2025-06-17",
+    "tags": ["cramped", "poor_service"]
+  },
+  {
+    "reviewer_id": "reviewer_011",
+    "rating": 4.1,
+    "text": "Spotlessly clean aircraft and a smooth on-time departure. The snack box was surprisingly decent for a budget carrier.",
+    "date": "2025-07-03",
+    "tags": ["clean", "on_time", "good_food"]
+  },
+  {
+    "reviewer_id": "reviewer_012",
+    "rating": 3.7,
+    "text": "Bumpy approach into the destination but the pilot handled it well. Boarding was a little chaotic but we departed on time.",
+    "date": "2025-07-20",
+    "tags": ["bumpy", "on_time", "efficient_boarding"]
+  },
+  {
+    "reviewer_id": "reviewer_013",
+    "rating": 4.5,
+    "text": "Premium economy was worth every extra cent. Wide seats, attentive crew, and a menu that surprised us on a mid-haul route.",
+    "date": "2025-08-09",
+    "tags": ["comfortable_seats", "good_food", "friendly_crew"]
+  },
+  {
+    "reviewer_id": "reviewer_014",
+    "rating": 2.0,
+    "text": "Three-hour delay, no meal voucher offered, and a dismissive response from ground staff. Will not be booking this airline again.",
+    "date": "2025-09-25",
+    "tags": ["delayed", "poor_service"]
+  },
+  {
+    "reviewer_id": "reviewer_015",
+    "rating": 4.7,
+    "text": "Smooth departure, smooth landing, and the crew struck the perfect balance between attentive and unobtrusive. Exactly what flying should be.",
+    "date": "2025-11-30",
+    "tags": ["smooth_flight", "friendly_crew", "on_time"]
+  }
+]
