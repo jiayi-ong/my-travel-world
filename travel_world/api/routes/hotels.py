@@ -77,16 +77,6 @@ def book_hotel(
     """Book a hotel room and add it to the session trip plan."""
     try:
         result = HotelService(world_state).book(hotel_id, check_in, check_out, session_id)
-        session_svc.add_trip_item(
-            session_id,
-            {
-                "item_type": "hotel",
-                "ref_id": hotel_id,
-                "date": check_in,
-                "cost": result.get("total_cost", 0),
-                "metadata": result,
-            },
-        )
         return result
     except FeasibilityViolationError as e:
         raise HTTPException(status_code=409, detail={"message": str(e), "violations": e.violations})

@@ -51,14 +51,6 @@ def book_ticket(
 ):
     try:
         result = EventService(world_state).book_ticket(event_id, quantity, session_id)
-        if session_id:
-            session_svc.add_trip_item(session_id, {
-                "item_type": "event",
-                "ref_id": event_id,
-                "date": result.get("start_datetime", "")[:10],
-                "cost": result.get("total_cost", 0),
-                "metadata": result,
-            })
         return result
     except FeasibilityViolationError as e:
         raise HTTPException(status_code=409, detail={"message": str(e), "violations": e.violations})

@@ -69,9 +69,140 @@ def list_cities(world_id: str, wm=Depends(get_world_manager)):
         world_state = wm.load_world(world_id)
         geo = world_state.get_layer("geo")
         return [
-            {"city_id": c.city_id, "name": c.name, "region_id": c.region_id}
+            {
+                "city_id": c.city_id,
+                "name": c.name,
+                "region_id": c.region_id,
+                "travel_advisory": c.travel_advisory,
+                "safety_score": c.safety_score,
+                "vibe_summary": c.vibe_summary,
+                "dominant_cuisines": c.dominant_cuisines,
+                "dominant_event_categories": c.dominant_event_categories,
+            }
             for c in geo.cities.values()
         ]
+    except WorldNotFoundError:
+        raise HTTPException(status_code=404, detail=f"World '{world_id}' not found.")
+
+
+@router.get("/{world_id}/districts")
+def list_districts(world_id: str, city_id: str | None = None, wm=Depends(get_world_manager)):
+    """List districts for a world, optionally filtered by city. Includes visitor reviews."""
+    try:
+        world_state = wm.load_world(world_id)
+        geo = world_state.get_layer("geo")
+        districts = geo.districts.values()
+        if city_id:
+            districts = [d for d in districts if d.city_id == city_id]
+        return [
+            {
+                "district_id": d.district_id,
+                "city_id": d.city_id,
+                "name": d.name,
+                "district_type": d.district_type.value,
+                "safety_score": d.safety_score,
+                "walkability_score": d.walkability_score,
+                "noise_level": d.noise_level,
+                "cost_index": d.cost_index,
+                "description": d.description,
+                "reviews": [
+                    {"reviewer_id": r.reviewer_id, "rating": r.rating,
+                     "positivity": r.positivity, "text": r.text,
+                     "date": r.date, "tags": r.tags}
+                    for r in d.reviews
+                ],
+            }
+            for d in districts
+        ]
+    except WorldNotFoundError:
+        raise HTTPException(status_code=404, detail=f"World '{world_id}' not found.")
+
+
+@router.get("/{world_id}/map_data")
+def get_map_data(world_id: str, wm=Depends(get_world_manager)):
+    """Return all geographic data for the interactive map in one call."""
+    try:
+        from travel_world.core.enums import TransportMode
+        world_state = wm.load_world(world_id)
+        geo = world_state.get_layer("geo")
+
+        cities = [
+            {
+                "city_id": c.city_id,
+                "name": c.name,
+                "lat": c.coordinates.lat,
+                "lon": c.coordinates.lon,
+                "safety_score": round(c.safety_score, 3),
+                "travel_advisory": c.travel_advisory,
+                "population": c.population,
+                "tourism_density": round(c.tourism_density, 3),
+            }
+            for c in geo.cities.values()
+        ]
+
+        districts = [
+            {
+                "district_id": d.district_id,
+                "city_id": d.city_id,
+                "name": d.name,
+                "lat": d.coordinates.lat,
+                "lon": d.coordinates.lon,
+                "district_type": d.district_type.value,
+                "safety_score": round(d.safety_score, 3),
+                "walkability_score": round(d.walkability_score, 3),
+                "cost_index": round(d.cost_index, 3),
+                "description": d.description,
+            }
+            for d in geo.districts.values()
+        ]
+
+        locations = []
+        for loc in geo.locations.values():
+            entry = {
+                "location_id": loc.location_id,
+                "name": loc.name,
+                "location_type": loc.location_type.value,
+                "city_id": loc.city_id,
+                "district_id": loc.district_id,
+                "lat": loc.coordinates.lat,
+                "lon": loc.coordinates.lon,
+                "description": getattr(loc, "description", ""),
+                "average_rating": loc.ratings.average_rating if loc.ratings else None,
+                "review_count": loc.ratings.review_count if loc.ratings else 0,
+                "popularity_score": getattr(loc, "popularity_score", None),
+            }
+            ltype = loc.location_type.value
+            if ltype == "hotel":
+                entry["star_rating"] = getattr(loc, "star_rating", None)
+                entry["price_per_night"] = getattr(loc, "price_per_night", None)
+            elif ltype == "restaurant":
+                entry["cuisine_types"] = getattr(loc, "cuisine_types", [])
+                entry["average_spend"] = getattr(loc, "average_spend", None)
+                entry["michelin_stars"] = getattr(loc, "michelin_stars", 0)
+                entry["reservation_required"] = getattr(loc, "reservation_required", False)
+            locations.append(entry)
+
+        seen: set = set()
+        flight_routes = []
+        for edge in geo.transport_edges.values():
+            if edge.mode != TransportMode.FLIGHT:
+                continue
+            o = geo.locations.get(edge.origin_node_id)
+            d = geo.locations.get(edge.destination_node_id)
+            if not o or not d:
+                continue
+            pair = (o.city_id, d.city_id)
+            if pair in seen or pair[0] == pair[1]:
+                continue
+            seen.add(pair)
+            flight_routes.append({"origin_city_id": o.city_id, "dest_city_id": d.city_id})
+
+        return {
+            "cities": cities,
+            "districts": districts,
+            "locations": locations,
+            "flight_routes": flight_routes,
+        }
     except WorldNotFoundError:
         raise HTTPException(status_code=404, detail=f"World '{world_id}' not found.")
 

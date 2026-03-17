@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from travel_world.manager.world_manager import WorldManager
 from travel_world.services.session_service import SessionService
-from travel_world.api.routes import world, flights, hotels, routing, attractions, events, session
+from travel_world.api.routes import world, flights, hotels, routing, attractions, events, session, weather, restaurants
 
 
 def create_app(worlds_root: str | None = None) -> FastAPI:
@@ -65,6 +65,8 @@ def create_app(worlds_root: str | None = None) -> FastAPI:
     app.include_router(attractions.router)
     app.include_router(events.router)
     app.include_router(session.router)
+    app.include_router(weather.router)
+    app.include_router(restaurants.router)
 
     @app.get("/health")
     def health():

@@ -256,10 +256,12 @@ class FlightService:
 
         total_price = price * passengers
 
-        return {
+        result = {
             "edge_id": edge.edge_id,
             "origin_hub_id": edge.origin_node_id,
             "destination_hub_id": edge.destination_node_id,
+            "origin_city_id": meta.get("origin_city_id"),
+            "destination_city_id": meta.get("destination_city_id"),
             "airline": airline,
             "flight_number": flight_number,
             "departure_datetime": dep_dt_str,
@@ -273,4 +275,13 @@ class FlightService:
             "expected_delay_min": delay_min,
             "distance_km": edge.distance_km,
             "baggage_included": meta.get("baggage_included", True),
+            "is_direct": meta.get("is_direct", True),
         }
+        # Propagate layover metadata for connecting flights
+        if not result["is_direct"]:
+            result["layover_city_id"] = meta.get("layover_city_id")
+            result["layover_city_name"] = meta.get("layover_city_name", "")
+            result["layover_airport_id"] = meta.get("layover_airport_id")
+            result["layover_duration_min"] = meta.get("layover_duration_min", 0)
+            result["connecting_flight_numbers"] = meta.get("connecting_flight_numbers", [])
+        return result

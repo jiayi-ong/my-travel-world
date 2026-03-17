@@ -94,6 +94,8 @@ class EventService:
             "start_datetime": event.start_datetime,
             "end_datetime": event.end_datetime,
             "base_ticket_price": event.base_ticket_price,
+            "requires_booking": getattr(event, "requires_booking", True),
+            "is_all_day_entry": getattr(event, "is_all_day_entry", False),
             "tickets_remaining": self._event_layer.get_tickets_remaining(event.event_id),
             "capacity": event.capacity,
             "popularity": event.popularity,
@@ -101,4 +103,10 @@ class EventService:
             "tags": event.tags,
             "average_rating": event.ratings.average_rating if event.ratings else None,
             "review_count": event.ratings.review_count if event.ratings else 0,
+            "reviews": [
+                {"reviewer_id": r.reviewer_id, "rating": r.rating,
+                 "positivity": r.positivity, "text": r.text,
+                 "date": r.date, "tags": r.tags}
+                for r in event.reviews
+            ],
         }

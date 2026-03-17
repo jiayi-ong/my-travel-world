@@ -122,6 +122,17 @@ class HotelService:
                 },
                 "tags": hotel.tags,
                 "neighborhood_score": round(hotel.neighborhood_score, 2),
+                "num_beds": getattr(hotel, "num_beds", 1),
+                "airport_shuttle": getattr(hotel, "airport_shuttle", False),
+                "reviews": [
+                    {
+                        "reviewer_id": r.reviewer_id,
+                        "rating": r.rating,
+                        "text": r.text,
+                        "date": r.date,
+                    }
+                    for r in getattr(hotel, "reviews", [])
+                ],
             })
 
         # Sort by average price per night ascending
