@@ -1,0 +1,124 @@
+DESIGN NOTES: WorldManager
+==========================
+
+REPOSITORY PATTERN — WHY WORLDMANAGER IS THE SINGLE I/O AUTHORITY
+-------------------------------------------------------------------
+WorldManager is the only component in the codebase that is allowed to read from
+or write to the worlds/ directory. All other components (generators, the FastAPI
+layer, agent tools) receive WorldState objects in memory and never touch the
+filesystem directly. This mirrors the Repository pattern: there is one place where
+persistence logic lives, and the rest of the system is decoupled from it.
+
+The benefits are:
+- Storage format can change (e.g., swap JSON for MessagePack or SQLite) without
+  touching generators or agents.
+- All I/O errors surface in one module, making debugging straightforward.
+- Testing generators and agents does not require a real filesystem; they only
+  need in-memory WorldState objects.
+
+
+FACTORY + BUILDER PATTERN — create_world vs load_world
+-------------------------------------------------------
+create_world() acts as a Factory: given a seed (and optional config), it drives
+the WorldGenerator to produce all six layers, persists them, and returns a
+ready-to-use WorldState. The caller passes in raw parameters and gets back a
+fully-formed object; the assembly details are hidden inside WorldManager.
+
+load_world() acts as a Builder: it reads already-persisted JSON layer files,
+validates each one, and assembles them step-by-step into a WorldState. The
+distinction matters because load_world() may load only a subset of layers
+(e.g., just geo + weather) for lightweight query use-cases, whereas create_world()
+always produces all six layers.
+
+
+WHY WorldState IS IMMUTABLE (swap_layer RETURNS A NEW INSTANCE)
+---------------------------------------------------------------
+WorldState is a frozen dataclass (or equivalent immutable structure). swap_layer()
+does not modify the existing WorldState in place; it calls world_state.with_layer()
+which constructs and returns a new WorldState instance with the specified layer
+replaced.
+
+Rationale:
+- Agents running in parallel can safely hold references to a WorldState snapshot
+  without risk of another thread mutating it mid-query.
+- Counterfactual experiments can branch from the same base WorldState by calling
+  swap_layer() with different replacement layers, creating independent timelines
+  without copying the entire world.
+- Immutability makes the system easier to reason about: if you have a reference to
+  a WorldState, you know it will not change under you.
+
+The caller is responsible for deciding whether the new layer should be persisted.
+swap_layer() itself does not call save_layer() — this is intentional. A caller
+running an in-memory experiment should not incur disk writes; a caller making a
+permanent change calls save_layer() explicitly.
+
+
+WHY GeoLayer IS ALWAYS LOADED
+------------------------------
+GeoLayer is the referential foundation of every other layer. It defines the
+canonical set of IDs for regions, cities, districts, locations, and transport
+edges. All other layers reference these IDs:
+
+  - WeatherLayer: city_id -> forecasts
+  - TrafficLayer: edge_id -> congestion profiles
+  - AccommodationLayer: hotel_id (a location_id) -> availability
+  - EventLayer: venue_id (a location_id) -> events
+  - EconomicsLayer: edge_id, hotel_id -> price data
+
+Without GeoLayer, none of the other layers can be interpreted. Loading any subset
+of layers without GeoLayer would produce an incomplete WorldState where IDs cannot
+be resolved. Therefore load_world() always includes "geo" in the layer_ids set,
+even if the caller did not request it explicitly.
+
+
+WORLD DIRECTORY STRUCTURE AND WHY JSON OVER A DATABASE
+-------------------------------------------------------
+Each world is stored as a directory:
+
+    worlds/
+      world_42_20250101_120000/
+        meta.json
+        geo_layer.json
+        weather_layer.json
+        traffic_layer.json
+        accommodation_layer.json
+        event_layer.json
+        economics_layer.json
+
+One directory per world. One JSON file per layer.
+
+Reasons for this structure over a relational or document database:
+
+1. Portability: A researcher can copy a world directory to another machine, share
+   it via zip, or inspect it with any text editor. No database server is required.
+
+2. Reproducibility: Each layer file is a complete, self-contained snapshot.
+   Combined with the seed in meta.json, any world can be regenerated from scratch
+   or the persisted snapshot can be loaded verbatim.
+
+3. Simplicity at research scale: World instances are small (dozens of cities,
+   thousands of locations). A database would add operational complexity with no
+   performance benefit at this scale.
+
+4. Layer independence: Because each layer is a separate file, partial loads are
+   trivial (just read the files you need). A single-table database design would
+   require filtering; a multi-table design would require schema migrations as
+   layers evolve.
+
+
+HOW LAYER SWAPPING ENABLES COUNTERFACTUAL EXPERIMENTS
+------------------------------------------------------
+A core research use-case is asking "what would the agent do if X were different?"
+where X might be flight prices, weather conditions, or event schedules.
+
+Layer swapping makes this cheap:
+
+1. Load a base world once: world_state = manager.load_world("world_42")
+2. Generate a modified layer in memory: new_econ = EconomicsGenerator(seed, high_price_config).generate(...)
+3. Create an alternate world state: alt_world = manager.swap_layer(world_state, new_econ)
+4. Run the agent against alt_world without touching the filesystem.
+
+Because WorldState is immutable, world_state and alt_world coexist safely in
+memory. The experiment compares agent behavior across the two world states.
+Multiple counterfactual branches can be created from the same base world_state
+in parallel, enabling large-scale ablation studies at low cost.

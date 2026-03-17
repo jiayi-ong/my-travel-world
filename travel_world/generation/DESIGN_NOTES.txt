@@ -1,0 +1,149 @@
+DESIGN NOTES: Generation Package
+=================================
+
+TWO-PASS GEO GENERATION — TOPOLOGY FIRST, ATTRIBUTES SECOND
+------------------------------------------------------------
+GeoGenerator runs in two distinct passes:
+
+Pass 1 (Topology): Build the graph skeleton. This means creating Region, City,
+and District nodes with coordinates, then generating TransportHub nodes (airports,
+train stations) and inter-city TransportEdge connections. At the end of Pass 1 we
+have a fully connected, geometrically consistent graph, but locations contain only
+positional data and IDs — no reviews, no semantic categories, no pricing.
+
+Pass 2 (Attribute Enrichment): Walk the skeleton and populate each node with
+semantic metadata. This includes generating non-hub Location entities (hotels,
+attractions, restaurants, event venues) within each District, assigning reviews
+drawn from the FixtureLoader, and computing RatingsSummary aggregates.
+
+Benefits of this separation:
+
+1. Correctness: Inter-city edge distances and travel times depend only on
+   coordinates (computed in Pass 1 via the haversine formula). Attribute data
+   cannot interfere with the topology, so the graph is always geometrically
+   consistent regardless of how attributes are assigned.
+
+2. Independent evolution: The topology schema (node/edge structure) is stable.
+   The attribute schema (new location types, new review fields) can evolve without
+   touching Pass 1 code. This mirrors real-world GIS pipelines where road network
+   topology updates are separate from point-of-interest database updates.
+
+3. Testability: Pass 1 can be tested with geometric assertions (distances are
+   non-negative, graph is connected, coordinates are in bounds). Pass 2 can be
+   tested with content assertions (every district has at least N hotels, every
+   location has at least one review). These concern different things and are cleaner
+   when the passes are separated.
+
+
+HOW FixtureLoader ENABLES EXTENSIBLE REVIEWS WITHOUT CODE CHANGES
+-----------------------------------------------------------------
+The FixtureLoader reads review objects from JSON files in data/fixtures/. The
+interface is simply: get_reviews(fixture_type, n) — return n sampled reviews of
+the given type.
+
+To add more reviews, a contributor edits hotel_reviews.json (or creates a new
+fixture file for a new type). No Python code changes are required. The loader
+caches files on first access, so performance is not affected by larger fixture
+files.
+
+The "with replacement" sampling strategy (random.choices) ensures that even small
+fixture files can supply an arbitrary number of reviews to generated locations.
+For research purposes, the diversity of the fixture set controls how much textual
+variety agents see in their observations — a desirable tunable parameter.
+
+The FixtureLoader receives the generator's rng instance, ensuring that review
+assignment is deterministic given the world seed, even across multiple calls.
+
+
+WHY EACH GENERATOR GETS ITS OWN ISOLATED random.Random SEED
+------------------------------------------------------------
+WorldGenerator derives a separate sub-seed for each generator:
+
+    sub_seed = hash((world_seed, generator_name)) % (2**32)
+
+Each generator then creates its own random.Random(sub_seed) instance and uses
+only that instance for all its random decisions.
+
+This isolation means:
+
+1. Changing one generator's implementation — adding a new decision point, changing
+   the order of calls — does not shift the random sequences consumed by any other
+   generator. A bug fix in WeatherGenerator does not alter the geography produced
+   by GeoGenerator.
+
+2. Generators can be developed and tested independently with predictable outputs,
+   because their random sequences are not coupled to execution order.
+
+3. Adding a new generator (e.g., a CultureGenerator) only requires assigning it a
+   new name string; existing generators are unaffected.
+
+This is in contrast to a single shared rng where any change to generation order
+cascades through all subsequent random draws.
+
+
+WorldGenerator FACADE PATTERN AND GENERATION DEPENDENCY ORDER
+-------------------------------------------------------------
+WorldGenerator exposes a single method: generate_all(world_id). Internally, it
+invokes six sub-generators in the correct dependency order:
+
+    geo -> weather -> traffic -> accommodation -> event -> economics
+
+The dependency graph is:
+  - GeoLayer: no dependencies (generates from scratch)
+  - WeatherLayer: needs GeoLayer (iterates over cities and their climate zones)
+  - TrafficLayer: needs GeoLayer (iterates over transport edges)
+  - AccommodationLayer: needs GeoLayer (reads Hotel locations from geo)
+  - EventLayer: needs GeoLayer (assigns events to venue locations in geo)
+  - EconomicsLayer: needs GeoLayer + AccommodationLayer + EventLayer (prices
+    reference edges from geo, hotels from accommodation, and event dates for
+    demand spikes)
+
+The Facade pattern means callers (WorldManager) do not need to know this order.
+WorldManager calls generate_all() and receives a complete dict of layers. If the
+dependency order changes in the future, only WorldGenerator needs to be updated.
+
+
+ECONOMICSLAYER SEPARATION RATIONALE — PRICING SCENARIOS VS PHYSICAL WORLD
+--------------------------------------------------------------------------
+EconomicsLayer is generated last and depends on the physical layers (geo,
+accommodation, events), but it is deliberately not embedded into those layers.
+
+The key motivation is counterfactual experimentation: a researcher may want to
+test how an agent responds to a high-price scenario versus a low-price scenario
+without changing the geography, hotel locations, or event schedule.
+
+With a separate EconomicsLayer, this is a single swap_layer() call. If prices
+were embedded in Hotel or TransportEdge objects, the researcher would have to
+regenerate or mutate those layers — coupling physical and economic concerns.
+
+Additionally, real-world pricing data is often sourced separately from geographic
+data (e.g., airline pricing APIs are separate from airport data). The separation
+mirrors that real-world architecture and makes it straightforward to replace the
+generated EconomicsLayer with one derived from real pricing data in later research
+phases.
+
+
+HOW DEFAULT_CONFIG ENABLES DIFFICULTY SCALING FOR RESEARCH EXPERIMENTS
+-----------------------------------------------------------------------
+WorldGenerator.DEFAULT_CONFIG specifies the scale of the generated world:
+
+    num_regions, num_cities_per_region, num_districts_per_city,
+    num_hotels_per_district, num_attractions_per_district,
+    num_restaurants_per_district, num_transport_hubs_per_city,
+    date_range_days, num_events_per_city, num_flights_per_route
+
+By passing a config override to WorldGenerator (and through it to WorldManager),
+a researcher can:
+
+- Create a minimal world (1 region, 1 city, 3 districts) for fast iteration and
+  unit testing of agent logic.
+- Create a medium world (2 regions, 3 cities, 5 districts each) for standard
+  experiments.
+- Create a large world (4 regions, 5 cities, 10 districts each) for stress-testing
+  planning algorithms and measuring scaling behavior.
+
+Because all generators receive the same config dict, scaling one parameter
+(e.g., num_cities_per_region) automatically scales all dependent data
+(weather forecasts, traffic profiles, accommodation calendars, events). There is
+no need to manually coordinate changes across generators — the config is the
+single source of truth for world scale.

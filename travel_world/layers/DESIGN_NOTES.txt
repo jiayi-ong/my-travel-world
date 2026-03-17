@@ -1,0 +1,139 @@
+DESIGN NOTES — travel_world.layers
+====================================
+Last updated: 2026-03-16
+
+
+1. THE LAYERED ARCHITECTURE PATTERN
+-------------------------------------
+Each layer is an independent, serialisable slice of world state:
+
+  GeoLayer          — geographic hierarchy + transport graph (always required)
+  WeatherLayer      — per-city, per-date weather forecasts
+  TrafficLayer      — per-edge, per-hour congestion multipliers
+  AccommodationLayer — hotel catalogue + availability calendars
+  EventLayer        — event catalogue + ticket inventory
+  EconomicsLayer    — price curves and demand multipliers
+
+Independence enables several research workflows that monolithic designs block:
+
+  a) Ablation experiments — disable one layer at a time to measure its
+     contribution to agent decision quality (e.g. "how much does weather
+     information improve plan reliability?").
+
+  b) Counterfactual swap — replace a single layer with a variant (e.g. a
+     high-season EconomicsLayer) while keeping all other layers fixed. This
+     isolates the effect of one dimension of world variation.
+
+  c) Incremental generation — expensive layers (GeoLayer, AccommodationLayer)
+     can be generated once and cached; cheap dynamic layers (WeatherLayer,
+     TrafficLayer) can be regenerated or streamed.
+
+  d) Mixed-seed worlds — combine layers from different random seeds to produce
+     novel world combinations that were never seen during training. This is the
+     primary mechanism for out-of-distribution generalisation experiments.
+
+
+2. THE BASELAYER TEMPLATE METHOD PATTERN
+-----------------------------------------
+BaseLayer defines a fixed save/load lifecycle:
+
+    save(path)  →  to_dict()  →  JSON file
+    load(path)  →  JSON file  →  from_dict()  →  layer instance
+
+Subclasses implement only to_dict() and from_dict(). The envelope serialisation
+(LayerMeta fields + "data" key) is handled once in BaseLayer.save() and
+BaseLayer.load(). This ensures:
+
+  a) Consistent file format — every layer file has the same outer structure.
+     WorldManager can read the envelope (world_id, layer_id, seed, schema_version,
+     generated_at, frozen) without knowing the layer type.
+
+  b) Schema versioning — the schema_version field in LayerMeta allows future
+     migration logic to be added to from_dict() without changing the interface.
+
+  c) Reduced boilerplate — subclasses are 100-200 lines of domain logic, not
+     200+ lines of serialisation plumbing.
+
+
+3. WHY WORLDSTATE IS NEVER PERSISTED
+--------------------------------------
+WorldState is a runtime composition of layer objects, assembled fresh by
+WorldManager on each request (or cached per-request via FastAPI dependency
+injection). It is never written to disk because:
+
+  a) Layers are the canonical source of truth — persisting WorldState would
+     duplicate data and create sync hazards if a layer file is updated
+     independently.
+
+  b) WorldState is request-scoped — its sim_date and composed_at fields vary
+     per request. Persisting it would conflate the static world data with
+     the request context.
+
+  c) with_layer() creates new WorldState instances — if WorldState were
+     persisted, counterfactual queries would write spurious files to disk.
+
+  d) Startup cost is low — assembling a WorldState from pre-loaded layer
+     objects is O(number of layers), not O(number of entities). Layers
+     themselves are loaded once at server startup and cached.
+
+
+4. WHY GEOLAYER MUST LOAD FIRST
+---------------------------------
+All other layers reference entity IDs that are defined in GeoLayer:
+
+  - WeatherLayer references city_ids
+  - TrafficLayer references edge_ids
+  - AccommodationLayer references hotel location_ids and city_ids
+  - EventLayer references venue location_ids and city_ids
+  - EconomicsLayer references hotel_ids and city-pair route keys
+
+WorldManager enforces load order by calling GeoLayer first and passing it
+to validate_internal_consistency() of subsequent layers. If GeoLayer is absent
+from WorldState, LayerNotLoadedError is raised before any service query executes.
+
+GeoLayer also builds the NetworkX transport graph at load time. Other services
+query the graph (e.g. for pathfinding) via WorldState.get_layer("geo").get_graph().
+This means the graph is built once and shared, not rebuilt per request.
+
+
+5. THE FREEZE MECHANISM
+------------------------
+Each layer has a frozen: bool flag (stored in LayerMeta, persisted to disk).
+
+  - Frozen layers silently ignore tick_update() calls (BaseLayer.tick_update
+    returns immediately if self.frozen is True).
+  - Frozen layers also ignore mutation calls in subclasses (record_booking,
+    book_ticket) — those methods check self.frozen and return early.
+
+Use cases for freezing:
+
+  a) Reproducible evaluation — freeze all layers to create a fixed-world
+     benchmark where every agent run starts from exactly the same state.
+
+  b) Static baselines — freeze AccommodationLayer and EventLayer to evaluate
+     planning algorithms on availability that does not change between runs.
+
+  c) Partial dynamics — freeze GeoLayer and WeatherLayer (slow-changing) but
+     leave AccommodationLayer unfrozen to simulate booking competition between
+     agents.
+
+Freezing is applied per-layer, not per-world, giving fine-grained control.
+
+
+6. MIXING LAYERS FROM DIFFERENT SEEDS
+---------------------------------------
+Because each layer is independently serialisable and references entities only
+by string ID, layers from different world seeds can be combined as long as the
+entity IDs are consistent. WorldManager.validate_cross_layer_consistency()
+(to be implemented) runs validate_internal_consistency() on each layer against
+the loaded GeoLayer to check referential integrity before serving requests.
+
+Example counterfactual experiment:
+  - Generate world_001 with seed=1 (sunny climate)
+  - Generate world_002 with seed=2 (rainy climate) using the SAME GeoLayer
+    but a different WeatherLayer seed
+  - Load GeoLayer from world_001 + WeatherLayer from world_002
+  - Run the same agent policy on both WeatherLayers to measure weather robustness
+
+This is only possible because layers are stored and loaded independently, and
+WorldState.with_layer() creates a new snapshot without mutating the originals.
