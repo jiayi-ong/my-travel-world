@@ -1,0 +1,70 @@
+SERVICES MODULE — DESIGN NOTES
+================================
+
+1. SERVICE LAYER PATTERN: WHY BUSINESS LOGIC LIVES IN SERVICES, NOT API ROUTE HANDLERS
+-----------------------------------------------------------------------------------------
+FastAPI route handlers are intentionally thin: they parse the incoming request, call the
+appropriate service method, and return the response. All domain logic — pricing, filtering,
+graph traversal, crowding estimation — lives in service classes. This separation has several
+practical benefits for this project:
+- Testability: services can be unit-tested directly without spinning up an HTTP server,
+  by constructing them with a mock or real WorldState.
+- Reusability: the Streamlit UI backend can call services directly (bypassing HTTP) for
+  operations that don't need the full API lifecycle.
+- Clarity of ownership: if there is a bug in flight price calculation, the answer is
+  always "look in FlightService", not scattered across route handlers.
+- LLM discoverability: service method signatures become the authoritative documentation
+  of what each operation does, independent of HTTP method semantics.
+
+2. STATELESS SERVICE DESIGN: world_state AT CONSTRUCTION, NO PERSISTENT STATE BETWEEN REQUESTS
+------------------------------------------------------------------------------------------------
+Each service receives world_state at construction time and caches layer references in __init__.
+Services hold no mutable state that persists between method calls. This means:
+- A fresh service instance can be created for each request (FastAPI's default behavior with
+  Depends), or a single instance can be reused — both are safe.
+- Services are thread-safe by construction: they read from shared world layer data but do
+  not mutate shared service-level state.
+- The only exception is SessionService, which intentionally holds the _sessions dict as
+  persistent state — but this is the explicit design of that class, not an accident.
+
+3. HOW session_service BRIDGES UI AND LLM: BOTH READ/WRITE THE SAME UserSession
+----------------------------------------------------------------------------------
+The Streamlit UI and external LLM agent projects interact with the same session object
+through the same /session API endpoints. The UI writes user preferences (origin, dates,
+budget) when the user fills in the trip form. The LLM agent reads those preferences as its
+planning context. As the LLM agent makes planning decisions (selecting flights, hotels,
+events), it writes TripPlanItems back to the session. The Streamlit UI reads those items
+to update the displayed trip plan in real time. The chat_history field serves as the shared
+message log that both the Streamlit chat component and the LLM agent framework write to and
+read from. This single-session-as-shared-state model eliminates the need for a separate
+message bus or event streaming system in the MVP.
+
+4. IN-MEMORY SESSION STORE TRADE-OFF (SIMPLICITY VS PERSISTENCE) AND UPGRADE PATH
+------------------------------------------------------------------------------------
+SessionService uses a plain Python dict as its backing store. This was a deliberate
+simplicity choice for the MVP:
+- No infrastructure dependencies: no Redis, no database, no connection pooling.
+- No serialization overhead: UserSession objects live as Python objects in memory.
+- No consistency concerns across requests: all requests hit the same process in
+  development.
+The trade-off is that sessions are lost on server restart, and the design does not scale
+horizontally. The upgrade path to Redis is straightforward: replace _sessions: dict with
+a RedisSessionStore class that implements the same interface (create_session, get_session,
+update_preferences, etc.). Because all session access goes through SessionService methods
+rather than direct dict access, no route handlers or service classes need to change. The
+Redis store would serialize UserSession to/from JSON using Pydantic's model_dump/model_validate.
+
+5. HOW interaction_log ENABLES OFFLINE AGENT EVALUATION WITHOUT COUPLING TO THE LLM PROJECT
+---------------------------------------------------------------------------------------------
+The interaction_log field in UserSession records every API call made during a session:
+endpoint, request parameters, and response status. This log is exportable via
+GET /session/{session_id}/interaction_log. The LLM evaluation framework (a separate project)
+can run an agent against this API, then pull the interaction log to analyze:
+- Which tools (endpoints) the agent called
+- Whether the agent searched before booking
+- Whether the agent respected budget constraints
+- The sequence and efficiency of calls
+This decouples the evaluation from the LLM framework entirely: the API records what happened,
+and evaluation happens offline against the exported log. The API server has no dependency on
+any LLM library, and the LLM project has no dependency on session internals. They communicate
+only through the HTTP API contract and the exported log format.

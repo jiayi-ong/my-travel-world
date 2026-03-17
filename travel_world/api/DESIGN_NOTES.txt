@@ -1,0 +1,87 @@
+API MODULE — DESIGN NOTES
+==========================
+
+1. WHY FastAPI OVER FLASK (OpenAPI AUTO-GENERATION = LLM TOOL DISCOVERY)
+--------------------------------------------------------------------------
+FastAPI was chosen primarily because it generates an OpenAPI 3.x schema automatically
+from Pydantic type annotations. This is not just a developer convenience — it is a core
+project requirement. The external LLM agent project needs to discover available tools
+(API endpoints) and their parameter schemas without manual documentation. FastAPI's
+auto-generated /openapi.json endpoint and /docs UI provide this out of the box.
+When the LLM agent framework fetches /openapi.json, it receives a machine-readable
+description of every endpoint, its parameters, and its response shapes — exactly what
+is needed to auto-generate tool definitions for function-calling APIs. Flask would
+require a separate library (flask-restx, apispec) and manual annotation to achieve the
+same result. FastAPI also provides native async support (useful if IO-bound world
+operations become async in future) and automatic request validation via Pydantic,
+reducing the amount of defensive validation code in route handlers.
+
+2. APPLICATION FACTORY PATTERN (create_app) FOR TEST ISOLATION
+----------------------------------------------------------------
+The create_app() function creates and configures a fresh FastAPI instance each time
+it is called. This pattern is standard in production web frameworks (Flask also uses it)
+and is essential for test isolation. In tests, a fixture calls create_app(worlds_root="/tmp/test_worlds")
+to get a fresh app pointed at a temporary world directory. Each test function gets its
+own app instance with its own WorldManager and SessionService, so tests never share state.
+Without the factory pattern, the module-level app = FastAPI() would be a singleton, and
+tests would contaminate each other's world and session state. The run_api.py entry point
+simply calls create_app() and passes the result to uvicorn — it is not responsible for
+any configuration logic itself.
+
+3. DEPENDENCY INJECTION FOR WorldState AND SessionService (AVOIDS GLOBAL STATE)
+----------------------------------------------------------------------------------
+All route handlers receive WorldState and SessionService via FastAPI's Depends() mechanism
+rather than importing them as module-level globals. This has three important consequences:
+- No import-time side effects: importing a route module does not instantiate any services.
+- Swappable in tests: test fixtures can override dependencies using app.dependency_overrides,
+  injecting mock WorldState objects without touching production code.
+- Request-scoped safety: each request gets the current active_world_state from app.state,
+  so if a researcher loads a different world between requests, subsequent requests
+  automatically see the new world without stale references.
+The get_active_world_state() dependency enforces the invariant that a world must be loaded
+before any planning endpoint is called, returning HTTP 503 with a clear message rather than
+an internal AttributeError.
+
+4. WHY SESSIONS ARE THE LLM INTEGRATION HUB (UI AND LLM READ/WRITE SAME SESSION STATE)
+-----------------------------------------------------------------------------------------
+The /session endpoints serve as a shared blackboard between the Streamlit UI and the
+external LLM agent. This design avoids the need for a separate message bus, webhook
+system, or real-time protocol (WebSockets, SSE) in the MVP:
+- The Streamlit UI writes user preferences and reads the trip plan.
+- The LLM agent reads preferences (its planning context) and writes trip plan items
+  (its planning output) and chat messages (its reasoning output).
+- The /session/{id}/llm_status endpoint gives the UI a simple polling mechanism to
+  show a "thinking..." indicator while the agent is working.
+Both parties communicate through the same REST endpoints with the same session_id.
+The session object is the single source of truth for what the user wants and what
+the agent has decided. This eliminates synchronization complexity at the cost of
+requiring the LLM agent to make HTTP calls rather than direct function calls —
+an acceptable trade-off that also means the LLM project can be written in any
+language or framework.
+
+5. THE /session/interaction_log ENDPOINT AND ITS ROLE IN OFFLINE AGENT EVALUATION
+------------------------------------------------------------------------------------
+Every API call made during a session is recorded in the session's interaction_log:
+the endpoint path, a summary of the request parameters, and the HTTP response status.
+After a planning session completes, a researcher can GET /session/{id}/interaction_log
+to retrieve the full trace of what the agent did. This trace is consumed by an offline
+evaluation framework (separate project) that scores agent behavior on dimensions such as:
+- Tool coverage: did the agent search before booking?
+- Budget adherence: did the total cost stay within the stated budget?
+- Efficiency: how many API calls were needed to produce a complete trip plan?
+- Error recovery: did the agent handle 404 / 503 responses gracefully?
+The log format is intentionally simple (list of dicts) so it can be parsed by any
+evaluation tool without a dependency on this project's data models. The log_interaction()
+call is placed in route handlers (not in services), keeping evaluation instrumentation
+at the API layer and out of business logic.
+
+6. CORS CONFIGURATION RATIONALE (ALLOW ALL IN DEV, RESTRICT IN PROD)
+----------------------------------------------------------------------
+In development, CORSMiddleware is configured with allow_origins=["*"] to permit requests
+from the Streamlit frontend (which runs on a different port), external LLM agent code
+running locally, and any notebook or script a researcher might use. Restricting origins
+during development would create constant friction. In production (if deployed), the
+allowed origins list should be narrowed to the specific Streamlit app URL and any
+authorized LLM agent endpoints. The create_app() function accepts a configuration
+parameter that can override CORS settings, making the production restriction a
+one-line change in the deployment configuration rather than a code change.
