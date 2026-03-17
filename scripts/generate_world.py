@@ -5,6 +5,7 @@ Usage:
     python scripts/generate_world.py --seed 42
     python scripts/generate_world.py --seed 42 --world-id my_world --worlds-root ./worlds
     python scripts/generate_world.py --seed 42 --num-cities 3 --date-range 90
+    python scripts/generate_world.py --seed 42 --num-events-per-city 500
 """
 import argparse
 import sys
@@ -50,6 +51,12 @@ def parse_args() -> argparse.Namespace:
         help="Number of days of simulation data to generate (flights, events, etc.).",
     )
     parser.add_argument(
+        "--num-events-per-city",
+        type=int,
+        default=None,
+        help="Override number of events generated per city (default: 60).",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print detailed generation progress.",
@@ -74,6 +81,8 @@ def main() -> int:
         "num_cities_per_region": args.num_cities,
         "date_range_days": args.date_range,
     }
+    if args.num_events_per_city is not None:
+        config["num_events_per_city"] = args.num_events_per_city
 
     if args.verbose:
         print(f"Generating world with seed={args.seed}, num_cities={args.num_cities}, "

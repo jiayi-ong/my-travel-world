@@ -9,57 +9,57 @@
 
   "default": {
     "hotels": 9,
-    "attractions": 4,
-    "restaurants": 5,
+    "attractions": 6,
+    "restaurants": 25,
     "event_venues": [1, 2]
   },
 
   "touristic": {
     "hotels": 18,
-    "attractions": 5,
-    "restaurants": 6,
+    "attractions": 8,
+    "restaurants": 30,
     "event_venues": [2, 3]
   },
 
   "cultural": {
     "hotels": 6,
-    "attractions": 8,
-    "restaurants": 4,
+    "attractions": 13,
+    "restaurants": 20,
     "event_venues": [2, 4]
   },
 
   "business": {
     "hotels": 15,
-    "attractions": 1,
-    "restaurants": 6,
+    "attractions": 2,
+    "restaurants": 30,
     "event_venues": [0, 1]
   },
 
   "residential": {
     "hotels": 4,
-    "attractions": 2,
-    "restaurants": 4,
+    "attractions": 3,
+    "restaurants": 20,
     "event_venues": [0, 1]
   },
 
   "nightlife": {
     "hotels": 9,
-    "attractions": 3,
-    "restaurants": 7,
+    "attractions": 5,
+    "restaurants": 35,
     "event_venues": [2, 3]
   },
 
   "historic": {
     "hotels": 9,
-    "attractions": 7,
-    "restaurants": 4,
+    "attractions": 11,
+    "restaurants": 20,
     "event_venues": [1, 2]
   },
 
   "waterfront": {
     "hotels": 12,
-    "attractions": 5,
-    "restaurants": 6,
+    "attractions": 8,
+    "restaurants": 30,
     "event_venues": [1, 2]
   }
 }

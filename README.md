@@ -18,10 +18,61 @@ travel_world/
   services/      # Business logic (FlightService, HotelService, EventService, ...)
   api/           # FastAPI app, routes, and Pydantic schemas
   frontend/      # Streamlit UI (tabs, card components, API client)
+  evaluation/    # Itinerary evaluation framework (constraint checks, scoring)
   simulation/    # Simulation clock and tick engine
-data/fixtures/   # Seeded review banks and event templates (JSON)
-scripts/         # CLI tools: generate_world, run_api, inspect_world
+data/
+  fixtures/      # Seeded review banks and event templates (JSON)
+  config/        # district_density_profiles.json — entity counts per district type
+scripts/         # CLI tools: generate_world, run_api, compute_world_stats
 ```
+
+---
+
+## World Generation Logic
+
+A world is built in a single seeded pass through six generators, run in dependency order:
+
+```
+geo → weather / traffic → accommodation → events → economics
+```
+
+Each generator receives its own deterministic sub-seed (`hash((world_seed, name)) % 2³²`), so changing one generator never disturbs another's random sequence.
+
+### Geographic layer (`GeoGenerator`)
+
+| Concept | Detail |
+|---|---|
+| Structure | 1 region → N cities → 5 districts each (configurable) |
+| City character | Each city is assigned an **economic tier** (1–5), **climate zone**, **dominant cuisines** (biased by tier), and **dominant event categories** (2–3 random). A free-text **vibe summary** is generated from these. |
+| District types | `touristic`, `residential`, `nightlife`, `business`, `cultural`, `historic`, `waterfront`. Type is sampled uniformly. |
+| Entity counts | Controlled by `data/config/district_density_profiles.json` — edit the JSON to change how many hotels, restaurants, attractions, and event venues appear per district type. No code changes needed. |
+| Transport | Each city gets `num_transport_hubs_per_city` hubs. Directed flight edges are generated between every city pair with `num_flights_per_route` departures spread across the date range. |
+| Hotel amenities | Each amenity (16 types) has an independent probability that scales with star rating. Airport shuttle probability is 3 % (1-star) → 60 % (5-star). |
+| Restaurants | Cuisine sampling is weighted toward the city's dominant cuisines (3× weight) so cities develop a coherent food identity. |
+
+### Event layer (`EventGenerator`)
+
+- Templates live in `data/fixtures/event_templates.json`. Add entries to extend the catalogue without code changes.
+- Template selection per city is **weighted 3×** toward the city's `dominant_event_categories`, so each city has a distinct event character.
+- **Time distribution**: events are placed uniformly at random across the `date_range_days` window (default 90 days from today). Start times are 17:00–21:00. Duration by category: festival 24–72 h, market 6–12 h, attraction all-day, all others 2–4 h. There is no weekend clustering.
+- Total events ≈ `num_events_per_city × num_cities`.
+
+### Review fixtures (`FixtureLoader`)
+
+Review pools are stored in `data/fixtures/` (hotel, restaurant, district, event — 50 entries each). Event reviews carry an `event_categories` tag; the loader filters to category-matching reviews before sampling, preventing acoustics reviews from appearing on food events.
+
+### Configuration reference
+
+| Parameter | Where | Default |
+|---|---|---|
+| Number of cities | `--num-cities` CLI flag | 10 |
+| Date range (days) | `--date-range` CLI flag | 90 |
+| Events per city | `--num-events-per-city` CLI flag | 60 |
+| Restaurants / attractions / hotels per district | `data/config/district_density_profiles.json` | see file |
+| Districts per city | `WorldGenerator.DEFAULT_CONFIG` in `world_generator.py` | 5 |
+| Flights per route | `WorldGenerator.DEFAULT_CONFIG` | 10 |
+
+After every successful generation, `stats.json` is written to the world folder. Run `python scripts/compute_world_stats.py --world-id <id>` to recompute it at any time.
 
 ---
 
