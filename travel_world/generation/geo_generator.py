@@ -12,8 +12,10 @@ This two-pass approach mirrors real geographic data pipelines where topology
 (road networks, airport connections) is available separately from semantic
 metadata and can be updated independently.
 """
+import json
 import math
 import random
+from pathlib import Path
 
 from travel_world.core.entities import (
     Attraction,
@@ -80,11 +82,33 @@ class GeoGenerator:
     ]
     FLIGHT_SPEED_KMH = 850
     HAVERSINE_EARTH_RADIUS_KM = 6371
+    _DENSITY_PROFILES_PATH = (
+        Path(__file__).resolve().parents[2] / "data" / "config" / "district_density_profiles.json"
+    )
 
     def __init__(self, seed: int, config: dict):
         self.rng = random.Random(seed)
         self.config = config
         self.fixture_loader = FixtureLoader(self.rng)
+        self._density_profiles = self._load_density_profiles()
+
+    @classmethod
+    def _load_density_profiles(cls) -> dict:
+        with open(cls._DENSITY_PROFILES_PATH, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        # Strip the metadata comment keys
+        return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+    def _density(self, district, field: str) -> int:
+        """Return the count for `field` for this district's type, with default fallback."""
+        key = district.district_type.value if hasattr(district.district_type, "value") else str(district.district_type)
+        profile = self._density_profiles.get(key, self._density_profiles.get("default", {}))
+        default_profile = self._density_profiles.get("default", {})
+        value = profile.get(field, default_profile.get(field, 3))
+        if isinstance(value, list):
+            # [min, max] range
+            return self.rng.randint(value[0], value[1])
+        return int(value)
 
     # ── Public entry point ────────────────────────────────────────────────────
 
@@ -422,7 +446,7 @@ class GeoGenerator:
         self, world_id: str, district: District, city: City, start_idx: int
     ) -> list[Hotel]:
         """Generate Hotel entities for one district."""
-        n = self.config.get("num_hotels_per_district", 3)
+        n = self._density(district, "hotels")
         hotels: list[Hotel] = []
         star_weights = [0.1, 0.1, 0.4, 0.3, 0.1]
         star_choices = [1, 2, 3, 4, 5]
@@ -486,7 +510,7 @@ class GeoGenerator:
         self, world_id: str, district: District, city: City, start_idx: int
     ) -> list[Attraction]:
         """Generate Attraction entities for one district."""
-        n = self.config.get("num_attractions_per_district", 4)
+        n = self._density(district, "attractions")
         attractions: list[Attraction] = []
         outdoor_categories = {
             AttractionCategory.PARK, AttractionCategory.BEACH,
@@ -548,7 +572,7 @@ class GeoGenerator:
         self, world_id: str, district: District, city: City, start_idx: int
     ) -> list[Restaurant]:
         """Generate Restaurant entities for one district."""
-        n = self.config.get("num_restaurants_per_district", 5)
+        n = self._density(district, "restaurants")
         restaurants: list[Restaurant] = []
         days_all = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         for i in range(n):
@@ -606,8 +630,8 @@ class GeoGenerator:
     def _generate_event_venues_in_district(
         self, world_id: str, district: District, city: City, start_idx: int
     ) -> list[EventVenue]:
-        """Generate 1-2 EventVenue entities for one district."""
-        n = self.rng.randint(1, 2)
+        """Generate EventVenue entities for one district (count from density profile)."""
+        n = self._density(district, "event_venues")
         venues: list[EventVenue] = []
         venue_type_choices = [
             "Concert Hall", "Stadium", "Theater", "Park Stage", "Conference Center",

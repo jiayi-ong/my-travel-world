@@ -58,6 +58,37 @@ def compare_modes(
     return {"routes": routes, "world_id": world_state.world_id}
 
 
+@router.get("/nearby")
+def proximity_search(
+    lat: float,
+    lon: float,
+    top_n: int = 10,
+    sort_by: str = "distance",
+    location_type: str | None = None,
+    city_id: str | None = None,
+    mode: str = "walking",
+    world_state=Depends(get_active_world_state),
+):
+    """
+    Return the top N nearest locations to a coordinate.
+
+    - sort_by: 'distance' (km) or 'travel_time' (minutes estimated from mode speed)
+    - mode: transport mode for travel_time estimation (walking, bus, flight, ...)
+    - location_type: optional filter (hotel, attraction, restaurant, event_venue, ...)
+    - city_id: optional scope to a single city
+    """
+    results = RoutingService(world_state).proximity_search(
+        lat=lat,
+        lon=lon,
+        top_n=top_n,
+        sort_by=sort_by,
+        location_type=location_type,
+        city_id=city_id,
+        mode=mode,
+    )
+    return {"results": results, "count": len(results)}
+
+
 @router.get("/time")
 def get_travel_time(
     origin_id: str,

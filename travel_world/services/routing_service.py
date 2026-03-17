@@ -10,9 +10,23 @@ from typing import Optional
 
 import networkx as nx
 
-from travel_world.core.enums import TransportMode
+from travel_world.core.enums import LocationType, TransportMode
 from travel_world.layers.geo_layer import GeoLayer
 from travel_world.layers.traffic_layer import TrafficLayer
+
+# Approximate cruising speeds used for travel-time proximity estimates.
+_MODE_SPEED_KMH: dict[str, float] = {
+    TransportMode.WALKING.value:     5.0,
+    TransportMode.CYCLING.value:    15.0,
+    TransportMode.BUS.value:        30.0,
+    TransportMode.METRO.value:      40.0,
+    TransportMode.TAXI.value:       40.0,
+    TransportMode.RIDESHARE.value:  40.0,
+    TransportMode.RENTAL_CAR.value: 60.0,
+    TransportMode.RAIL.value:       80.0,
+    TransportMode.FLIGHT.value:    850.0,
+}
+WALKING_SPEED_KMH = 5.0
 
 
 class RoutingService:
@@ -127,6 +141,111 @@ class RoutingService:
             "available": True,
         }
 
+    def proximity_search(
+        self,
+        lat: float,
+        lon: float,
+        top_n: int = 10,
+        sort_by: str = "distance",
+        location_type: Optional[str] = None,
+        city_id: Optional[str] = None,
+        mode: str = "walking",
+    ) -> list[dict]:
+        """
+        Return the top N nearest locations to a coordinate, sorted by Haversine distance
+        or estimated travel time.
+
+        Complexity: O(N) — pure distance scan, no graph traversal.
+
+        Args:
+            lat / lon:        Query coordinate.
+            top_n:            Maximum results to return.
+            sort_by:          "distance" (km) or "travel_time" (minutes).
+            location_type:    Optional LocationType value string to filter results.
+            city_id:          Optional city scope; if None, searches all cities.
+            mode:             Transport mode used for travel_time estimation.
+                              Speed lookup: walking=5, bus=30, flight=850 km/h, etc.
+        """
+        speed_kmh = _MODE_SPEED_KMH.get(mode.lower(), WALKING_SPEED_KMH)
+
+        candidates: list[dict] = []
+        for loc in self._geo.locations.values():
+            if city_id and loc.city_id != city_id:
+                continue
+            if location_type and loc.location_type.value != location_type.lower():
+                continue
+            dist_km = self._haversine(lat, lon, loc.coordinates.lat, loc.coordinates.lon)
+            travel_time_min = (dist_km / speed_kmh) * 60 if speed_kmh > 0 else float("inf")
+            candidates.append({
+                "location_id": loc.location_id,
+                "name": getattr(loc, "name", loc.location_id),
+                "location_type": loc.location_type.value,
+                "city_id": loc.city_id,
+                "district_id": loc.district_id,
+                "coordinates": {"lat": loc.coordinates.lat, "lon": loc.coordinates.lon},
+                "distance_km": round(dist_km, 3),
+                "estimated_travel_time_min": round(travel_time_min, 1),
+                "sort_mode": mode,
+            })
+
+        key = "distance_km" if sort_by == "distance" else "estimated_travel_time_min"
+        candidates.sort(key=lambda x: x[key])
+        return candidates[:top_n]
+
+    def _plan_walking(
+        self,
+        origin_id: str,
+        dest_id: str,
+    ) -> Optional[dict]:
+        """
+        Compute a walking route between two locations using direct Haversine distance.
+        Walking is only permitted within the same city.
+        """
+        origin_loc = self._geo.locations.get(origin_id)
+        dest_loc = self._geo.locations.get(dest_id)
+        if origin_loc is None or dest_loc is None:
+            return None
+        if origin_loc.city_id != dest_loc.city_id:
+            return None
+
+        dist_km = self._haversine(
+            origin_loc.coordinates.lat, origin_loc.coordinates.lon,
+            dest_loc.coordinates.lat, dest_loc.coordinates.lon,
+        )
+        duration_min = (dist_km / WALKING_SPEED_KMH) * 60
+
+        return {
+            "mode": TransportMode.WALKING.value,
+            "origin_id": origin_id,
+            "destination_id": dest_id,
+            "segments": [{
+                "origin_id": origin_id,
+                "destination_id": dest_id,
+                "mode": TransportMode.WALKING.value,
+                "duration_min": round(duration_min, 1),
+                "cost": 0.0,
+                "distance_km": round(dist_km, 3),
+                "edge_id": "",
+                "origin_coords": {
+                    "lat": origin_loc.coordinates.lat,
+                    "lon": origin_loc.coordinates.lon,
+                },
+                "destination_coords": {
+                    "lat": dest_loc.coordinates.lat,
+                    "lon": dest_loc.coordinates.lon,
+                },
+            }],
+            "total_duration_min": round(duration_min, 1),
+            "total_cost": 0.0,
+            "total_distance_km": round(dist_km, 3),
+            "polyline": [
+                [origin_loc.coordinates.lat, origin_loc.coordinates.lon],
+                [dest_loc.coordinates.lat, dest_loc.coordinates.lon],
+            ],
+            "num_transfers": 0,
+            "optimize_for": "time",
+        }
+
     def _plan_single_mode(
         self,
         origin_id: str,
@@ -137,7 +256,12 @@ class RoutingService:
     ) -> Optional[dict]:
         """
         Plan a route for a single transport mode. Returns None if no path exists.
+        Walking is handled without the graph via direct Haversine calculation.
         """
+        # Walking bypasses the transport graph entirely
+        if mode == TransportMode.WALKING:
+            return self._plan_walking(origin_id, dest_id)
+
         mode_value = mode.value if hasattr(mode, "value") else str(mode)
 
         # Build a simple DiGraph subgraph for this mode only
@@ -259,6 +383,19 @@ class RoutingService:
             "num_transfers": len(path) - 2,
             "optimize_for": optimize_for,
         }
+
+    @staticmethod
+    def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Return great-circle distance in km between two WGS-84 coordinates."""
+        R = 6371.0
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2))
+            * math.sin(dlon / 2) ** 2
+        )
+        return R * 2 * math.asin(math.sqrt(a))
 
     def _apply_congestion_weight(
         self, edge_id: str, base_time: float, departure_dt: datetime

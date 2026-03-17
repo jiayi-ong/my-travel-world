@@ -1,0 +1,65 @@
+{
+  "_comment": "Per-district-type location counts used by GeoGenerator. Edit freely — no code changes needed.",
+  "_fields": {
+    "hotels":       "number of Hotel entities per district",
+    "attractions":  "number of Attraction entities per district",
+    "restaurants":  "number of Restaurant entities per district",
+    "event_venues": "[min, max] range; generator samples uniformly"
+  },
+
+  "default": {
+    "hotels": 3,
+    "attractions": 4,
+    "restaurants": 5,
+    "event_venues": [1, 2]
+  },
+
+  "touristic": {
+    "hotels": 6,
+    "attractions": 5,
+    "restaurants": 6,
+    "event_venues": [2, 3]
+  },
+
+  "cultural": {
+    "hotels": 2,
+    "attractions": 8,
+    "restaurants": 4,
+    "event_venues": [2, 4]
+  },
+
+  "business": {
+    "hotels": 5,
+    "attractions": 1,
+    "restaurants": 6,
+    "event_venues": [0, 1]
+  },
+
+  "residential": {
+    "hotels": 1,
+    "attractions": 2,
+    "restaurants": 4,
+    "event_venues": [0, 1]
+  },
+
+  "nightlife": {
+    "hotels": 3,
+    "attractions": 3,
+    "restaurants": 7,
+    "event_venues": [2, 3]
+  },
+
+  "historic": {
+    "hotels": 3,
+    "attractions": 7,
+    "restaurants": 4,
+    "event_venues": [1, 2]
+  },
+
+  "waterfront": {
+    "hotels": 4,
+    "attractions": 5,
+    "restaurants": 6,
+    "event_venues": [1, 2]
+  }
+}
