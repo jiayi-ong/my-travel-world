@@ -19,16 +19,12 @@ def render(client: TravelWorldClient) -> None:
     _render_session_panel(client)
     st.divider()
 
-    col1, col2 = st.columns(2)
-    with col1:
-        _render_origin_destination(client)
-    with col2:
-        _render_dates_and_budget()
-
+    _render_origin_destination(client)
+    _render_city_details(client)
+    st.divider()
+    _render_dates_and_budget()
     _render_group_and_style()
     _render_apply_button(client)
-    st.divider()
-    _render_trip_plan_summary(client)
 
 
 def _render_world_selector(client: TravelWorldClient) -> None:
@@ -97,72 +93,133 @@ def _render_session_panel(client: TravelWorldClient) -> None:
                 st.rerun()
 
 
-def _render_origin_destination(client: TravelWorldClient) -> None:
-    """Origin city and destination city selectors (dropdown populated from active world)."""
-    st.subheader("Where")
-    prefs = state.get_preferences()
+def _load_cities(client: TravelWorldClient) -> list[dict]:
+    """Load city list for the active world; returns [] on failure."""
     world_id = st.session_state.get(state.WORLD_ID_KEY)
+    if not world_id:
+        return []
+    try:
+        return client.list_cities(world_id)
+    except APIError as e:
+        st.warning(f"Could not load city list ({e.message}) — please restart the API server.")
+        return []
 
-    # Load city list for selectbox
-    cities: list[dict] = []
-    if world_id:
-        try:
-            cities = client.list_cities(world_id)
-        except APIError as e:
-            st.warning(f"Could not load city list ({e.message}) — please restart the API server.")
+
+def _render_origin_destination(client: TravelWorldClient) -> None:
+    """Origin and destination selectors, side by side in two columns."""
+    st.subheader("Where")
+    prefs  = state.get_preferences()
+    cities = _load_cities(client)
+
+    col_from, col_to = st.columns(2)
 
     if cities:
-        city_ids = [c["city_id"] for c in cities]
+        city_ids   = [c["city_id"] for c in cities]
         city_labels = {c["city_id"]: c["name"] for c in cities}
 
-        current_origin = prefs.get("origin_city_id", "")
-        origin_index = city_ids.index(current_origin) if current_origin in city_ids else 0
-        origin = st.selectbox(
-            "Origin City",
-            options=city_ids,
-            index=origin_index,
-            format_func=lambda x: f"{city_labels.get(x, x)} ({x})",
-            key="input_origin_city_id",
-        )
-        if origin != prefs.get("origin_city_id", ""):
-            state.update_preference("origin_city_id", origin)
+        with col_from:
+            current_origin = prefs.get("origin_city_id", "")
+            origin_index   = city_ids.index(current_origin) if current_origin in city_ids else 0
+            origin = st.selectbox(
+                "Flying from",
+                options=city_ids,
+                index=origin_index,
+                format_func=lambda x: city_labels.get(x, x),
+                key="input_origin_city_id",
+            )
+            if origin != prefs.get("origin_city_id", ""):
+                state.update_preference("origin_city_id", origin)
 
-        dest_list = prefs.get("destination_city_ids", [])
-        current_dest = dest_list[0] if dest_list else ""
-        dest_index = city_ids.index(current_dest) if current_dest in city_ids else (1 if len(city_ids) > 1 else 0)
-        destination = st.selectbox(
-            "Destination City",
-            options=city_ids,
-            index=dest_index,
-            format_func=lambda x: f"{city_labels.get(x, x)} ({x})",
-            key="input_destination_city_id",
-        )
-        if destination != current_dest:
-            state.update_preference("destination_city_ids", [destination])
-            state.update_preference("destination_city_id", destination)
+        with col_to:
+            dest_list    = prefs.get("destination_city_ids", [])
+            current_dest = dest_list[0] if dest_list else ""
+            dest_index   = city_ids.index(current_dest) if current_dest in city_ids else (1 if len(city_ids) > 1 else 0)
+            destination  = st.selectbox(
+                "Flying to",
+                options=city_ids,
+                index=dest_index,
+                format_func=lambda x: city_labels.get(x, x),
+                key="input_destination_city_id",
+            )
+            if destination != current_dest:
+                state.update_preference("destination_city_ids", [destination])
+                state.update_preference("destination_city_id", destination)
     else:
-        # Fallback to text inputs if city list unavailable
-        origin = st.text_input(
-            "Origin City ID",
-            value=prefs.get("origin_city_id", ""),
-            placeholder="e.g. city_world_42_0001",
-            key="input_origin_city_id",
-        )
-        if origin != prefs.get("origin_city_id", ""):
-            state.update_preference("origin_city_id", origin)
+        with col_from:
+            origin = st.text_input(
+                "Flying from (City ID)",
+                value=prefs.get("origin_city_id", ""),
+                placeholder="e.g. city_world_42_0001",
+                key="input_origin_city_id",
+            )
+            if origin != prefs.get("origin_city_id", ""):
+                state.update_preference("origin_city_id", origin)
+        with col_to:
+            dest_list    = prefs.get("destination_city_ids", [])
+            dest_value   = dest_list[0] if dest_list else ""
+            destination  = st.text_input(
+                "Flying to (City ID)",
+                value=dest_value,
+                placeholder="e.g. city_world_42_0002",
+                key="input_destination_city_id",
+            )
+            current_dest = dest_list[0] if dest_list else ""
+            if destination != current_dest:
+                state.update_preference("destination_city_ids", [destination] if destination else [])
+                state.update_preference("destination_city_id", destination)
 
-        dest_list = prefs.get("destination_city_ids", [])
-        dest_value = dest_list[0] if dest_list else ""
-        destination = st.text_input(
-            "Destination City ID",
-            value=dest_value,
-            placeholder="e.g. city_world_42_0002",
-            key="input_destination_city_id",
-        )
-        current_dest = dest_list[0] if dest_list else ""
-        if destination != current_dest:
-            state.update_preference("destination_city_ids", [destination] if destination else [])
-            state.update_preference("destination_city_id", destination)
+
+def _render_city_details(client: TravelWorldClient) -> None:
+    """Independent city explorer — vibe summary + security advisory for any selected city."""
+    st.subheader("City Details")
+    cities = _load_cities(client)
+    if not cities:
+        st.caption("No city data available.")
+        return
+
+    city_ids    = [c["city_id"] for c in cities]
+    city_labels = {c["city_id"]: c["name"] for c in cities}
+    city_by_id  = {c["city_id"]: c for c in cities}
+
+    # Default to destination city if one is set
+    prefs       = state.get_preferences()
+    dest_list   = prefs.get("destination_city_ids", [])
+    default_cid = dest_list[0] if dest_list and dest_list[0] in city_ids else city_ids[0]
+    default_idx = city_ids.index(default_cid)
+
+    selected_id = st.selectbox(
+        "Explore city",
+        options=city_ids,
+        index=default_idx,
+        format_func=lambda x: city_labels.get(x, x),
+        key="city_detail_selector",
+    )
+
+    city = city_by_id.get(selected_id, {})
+    safety_score = city.get("safety_score", 1.0)
+    vibe         = city.get("vibe_summary", "")
+    advisory     = city.get("travel_advisory", "")
+    dominant_cuisines = city.get("dominant_cuisines", [])
+    dominant_events   = city.get("dominant_event_categories", [])
+
+    if vibe:
+        st.write(vibe)
+
+    col_c, col_e = st.columns(2)
+    if dominant_cuisines:
+        col_c.caption(f"🍴 **Food scene:** {', '.join(dominant_cuisines)}")
+    if dominant_events:
+        col_e.caption(f"🎭 **Events:** {', '.join(e.title() for e in dominant_events)}")
+
+    if advisory:
+        if safety_score >= 0.75:
+            st.info(f"🟢 **Travel Advisory:** {advisory}")
+        elif safety_score >= 0.55:
+            st.warning(f"🟡 **Travel Advisory:** {advisory}")
+        elif safety_score >= 0.35:
+            st.warning(f"🟠 **Travel Advisory:** {advisory}")
+        else:
+            st.error(f"🔴 **Travel Advisory:** {advisory}")
 
 
 def _render_dates_and_budget() -> None:
@@ -274,50 +331,3 @@ def _render_apply_button(client: TravelWorldClient) -> None:
             st.error(f"Failed: {e.message}")
 
 
-def _render_trip_plan_summary(client: TravelWorldClient) -> None:
-    """Live cost summary: total spent, remaining budget, breakdown by category."""
-    st.subheader("Trip Plan Summary")
-
-    session_id = state.get_session_id()
-    if not session_id:
-        st.info("Start a session to see your trip plan")
-        return
-
-    try:
-        summary = client.get_trip_plan_summary(session_id)
-    except APIError as e:
-        st.warning(f"Could not load trip plan: {e.message}")
-        return
-    except Exception:
-        st.warning("Could not load trip plan")
-        return
-
-    total_cost = summary.get("total_cost", 0.0)
-    budget_total = state.get_preferences().get("budget_total")
-    budget_rem = (
-        float(budget_total) - float(total_cost) if budget_total is not None else None
-    )
-    item_count = summary.get("item_count", len(summary.get("items", [])))
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Cost", f"${total_cost:.2f}")
-    if budget_rem is not None:
-        col2.metric("Budget Remaining", f"${budget_rem:.2f}", delta=None)
-    else:
-        col2.metric("Budget Remaining", "No budget set", delta=None)
-    col3.metric("Items", item_count)
-
-    # Category breakdown if available
-    breakdown = summary.get("breakdown", {})
-    if breakdown:
-        st.markdown("**Breakdown by category:**")
-        try:
-            import pandas as pd
-            breakdown_data = [
-                {"Category": cat.title(), "Cost ($)": f"${amount:.2f}"}
-                for cat, amount in breakdown.items()
-            ]
-            st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
-        except ImportError:
-            for cat, amount in breakdown.items():
-                st.caption(f"{cat.title()}: ${amount:.2f}")
