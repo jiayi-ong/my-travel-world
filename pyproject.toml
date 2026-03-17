@@ -10,11 +10,11 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
     "fastapi",
-    "uvicorn",
+    "uvicorn[standard]",
     "networkx",
     "streamlit",
-    "folium",
-    "streamlit-folium",
+    "plotly",
+    "pandas",
     "httpx",
     "numpy",
 ]

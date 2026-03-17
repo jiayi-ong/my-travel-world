@@ -1,0 +1,24 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: travel-world-ui
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "3"
+    spec:
+      containerConcurrency: 40
+      timeoutSeconds: 300   # Streamlit keeps long-lived connections
+      containers:
+        - image: gcr.io/YOUR_PROJECT_ID/travel-world-ui:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: TRAVEL_WORLD_API_URL
+              # Replace with the URL output by: gcloud run services describe travel-world-api --format='value(status.url)'
+              value: https://travel-world-api-XXXX-uc.a.run.app
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi

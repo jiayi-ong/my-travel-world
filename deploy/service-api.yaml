@@ -1,0 +1,37 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: travel-world-api
+  # Replace with your GCP project ID and preferred region
+  annotations:
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Allow up to 80 concurrent requests per instance (Cloud Run default)
+        autoscaling.knative.dev/maxScale: "5"
+        # Session affinity: routes the same client to the same instance so
+        # in-memory sessions survive across requests from one user
+        run.googleapis.com/sessionAffinity: "true"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 60
+      containers:
+        - image: gcr.io/YOUR_PROJECT_ID/travel-world-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: WORLDS_ROOT
+              value: /app/worlds
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12   # 60 s total before giving up

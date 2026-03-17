@@ -1,0 +1,46 @@
+# ── Travel World — API service ─────────────────────────────────────────────
+# Builds the FastAPI backend and pre-generates a world so the container is
+# ready to serve immediately on first request.
+#
+# Build args:
+#   WORLD_SEED          (default 42)   — RNG seed for world generation
+#   WORLD_NUM_CITIES    (default 10)   — cities to generate
+#   WORLD_EVENTS_CITY   (default 500)  — events per city
+
+FROM python:3.11-slim
+
+ARG WORLD_SEED=42
+ARG WORLD_NUM_CITIES=10
+ARG WORLD_EVENTS_CITY=500
+
+WORKDIR /app
+
+# System dependencies (networkx / numpy need gcc for some wheel builds)
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies first (layer-cache friendly)
+COPY pyproject.toml .
+RUN pip install --no-cache-dir ".[dev]" 2>/dev/null || pip install --no-cache-dir .
+
+# Copy source
+COPY . .
+
+# Re-install in editable mode so travel_world package is importable
+RUN pip install --no-cache-dir -e .
+
+# Pre-generate world and bake into image (makes container start-up instant)
+RUN python scripts/generate_world.py \
+        --seed ${WORLD_SEED} \
+        --num-cities ${WORLD_NUM_CITIES} \
+        --num-events-per-city ${WORLD_EVENTS_CITY} \
+        --worlds-root /app/worlds
+
+# Cloud Run injects PORT; default to 8000 for local runs
+ENV WORLDS_ROOT=/app/worlds
+ENV PORT=8000
+
+EXPOSE 8000
+
+# Shell form so ${PORT} is expanded at runtime
+CMD uvicorn travel_world.api.app:app --host 0.0.0.0 --port ${PORT}

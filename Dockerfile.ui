@@ -1,0 +1,29 @@
+# ── Travel World — Streamlit UI service ───────────────────────────────────
+# Thin frontend-only image. The API URL is injected at deploy time via the
+# TRAVEL_WORLD_API_URL environment variable.
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+RUN pip install --no-cache-dir . 2>/dev/null || pip install --no-cache-dir .
+
+COPY . .
+RUN pip install --no-cache-dir -e .
+
+# TRAVEL_WORLD_API_URL is set at deploy time (see deploy/service-ui.yaml)
+ENV TRAVEL_WORLD_API_URL=http://localhost:8000
+ENV PORT=8080
+
+EXPOSE 8080
+
+# Streamlit config via flags; PORT is expanded at runtime
+CMD streamlit run travel_world/frontend/app.py \
+        --server.port=${PORT} \
+        --server.address=0.0.0.0 \
+        --server.headless=true \
+        --browser.gatherUsageStats=false
