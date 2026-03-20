@@ -244,6 +244,26 @@ class TravelWorldClient:
         """Get full details for a restaurant including reviews."""
         return _self._get(f"/restaurants/{restaurant_id}")
 
+    # ── Transit ─────────────────────────────────────────────────────────────
+
+    @st.cache_data(ttl=300, show_spinner=False)
+    def get_transit_lines(_self, city_id: str) -> list[dict]:
+        """Return all transit lines for a city with ordered stop IDs and hex colors."""
+        try:
+            result = _self._get("/transit/lines", params={"city_id": city_id})
+            return result.get("lines", [])
+        except Exception:
+            return []
+
+    @st.cache_data(ttl=300, show_spinner=False)
+    def get_transit_stops(_self, city_id: str) -> list[dict]:
+        """Return all transit stops for a city."""
+        try:
+            result = _self._get("/transit/stops", params={"city_id": city_id})
+            return result.get("stops", [])
+        except Exception:
+            return []
+
     # ── Internal helpers ────────────────────────────────────────────────────
 
     def _get(self, path: str, params: dict | None = None) -> Any:
