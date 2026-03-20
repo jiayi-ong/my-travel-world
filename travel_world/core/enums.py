@@ -35,6 +35,10 @@ class LocationType(str, Enum):
     SHOPPING = "shopping"
     NIGHTLIFE = "nightlife"
     MARKET = "market"
+    TRANSIT_STOP = "transit_stop"
+    PUBLIC_AMENITY = "public_amenity"
+    SERVICE_VENUE = "service_venue"
+    AREA_ATTRACTION = "area_attraction"
 
 
 class DistrictType(str, Enum):
@@ -146,3 +150,58 @@ class AttractionCategory(str, Enum):
     BEACH = "beach"
     GALLERY = "gallery"
     HISTORIC_SITE = "historic_site"
+    VIEWPOINT = "viewpoint"
+    NATURE_RESERVE = "nature_reserve"
+    THEME_PARK = "theme_park"
+    AQUARIUM = "aquarium"
+    ZOO = "zoo"
+
+
+class CityArchetype(str, Enum):
+    """High-level character of a city; drives district mix, attraction types, and event categories."""
+    BEACH_RESORT = "beach_resort"
+    CULTURAL_CAPITAL = "cultural_capital"
+    TECH_HUB = "tech_hub"
+    MOUNTAIN_RETREAT = "mountain_retreat"
+    HISTORIC_CITY = "historic_city"
+    NIGHTLIFE_CITY = "nightlife_city"
+    NATURE_ESCAPE = "nature_escape"
+    FOODIE_HAVEN = "foodie_haven"
+    BUSINESS_CENTER = "business_center"
+    ADVENTURE_DESTINATION = "adventure_destination"
+
+
+class PublicAmenityType(str, Enum):
+    """Type of public amenity."""
+    HOSPITAL = "hospital"
+    POLICE_STATION = "police_station"
+    FIRE_STATION = "fire_station"
+    PHARMACY = "pharmacy"
+    CLINIC = "clinic"
+
+
+class ServiceVenueCategory(str, Enum):
+    """Category of a fixed-location service venue (open regular hours, not events)."""
+    SPA = "spa"
+    ARCADE = "arcade"
+    CINEMA = "cinema"
+    SHOPPING_MALL = "shopping_mall"
+    BOWLING_ALLEY = "bowling_alley"
+    ESCAPE_ROOM = "escape_room"
+    FITNESS_CENTER = "fitness_center"
+    KARAOKE = "karaoke"
+    COMEDY_CLUB = "comedy_club"
+    CASINO = "casino"
+    THEME_PARK = "theme_park"
+    AQUARIUM = "aquarium"
+    ZOO = "zoo"
+    BOTANICAL_GARDEN = "botanical_garden"
+    WATER_PARK = "water_park"
+
+
+class TransitLineType(str, Enum):
+    """Type of public transit line."""
+    METRO = "metro"
+    BUS = "bus"
+    TRAM = "tram"
+    FERRY = "ferry"

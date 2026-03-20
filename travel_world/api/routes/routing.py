@@ -28,7 +28,7 @@ def plan_route(
     parsed_modes = None
     if modes:
         try:
-            parsed_modes = [TransportMode(m.strip().upper()) for m in modes.split(",") if m.strip()]
+            parsed_modes = [TransportMode(m.strip().lower()) for m in modes.split(",") if m.strip()]
         except ValueError as e:
             raise HTTPException(status_code=422, detail=f"Invalid transport mode: {e}")
     routes = RoutingService(world_state).plan(
@@ -100,7 +100,57 @@ def get_travel_time(
     """Get travel time for a specific mode and departure time."""
     try:
         dt = datetime.fromisoformat(departure_datetime)
-        transport_mode = TransportMode(mode.upper())
+        transport_mode = TransportMode(mode.lower())
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return RoutingService(world_state).get_travel_time(origin_id, destination_id, transport_mode, dt)
+
+
+@router.get("/arrive_by")
+def plan_route_arrive_by(
+    origin_location_id: str,
+    destination_location_id: str,
+    arrival_datetime: str,
+    modes: str | None = None,
+    optimize_for: str = "time",
+    world_state=Depends(get_active_world_state),
+):
+    """
+    Back-calculate required departure time to arrive at a destination by a specified time.
+
+    Useful for planning: 'I need to be at the airport by 14:00 — when should I leave my hotel?'
+
+    Returns routes enriched with required_departure_datetime, estimated_arrival_datetime,
+    and buffer_min (slack time before the target arrival).
+    """
+    try:
+        dt = datetime.fromisoformat(arrival_datetime)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid datetime: {arrival_datetime}")
+    parsed_modes = None
+    if modes:
+        try:
+            parsed_modes = [TransportMode(m.strip().lower()) for m in modes.split(",") if m.strip()]
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid transport mode: {e}")
+    routes = RoutingService(world_state).plan_arrive_by(
+        origin_location_id, destination_location_id, dt, parsed_modes, optimize_for
+    )
+    return {
+        "routes": routes,
+        "world_id": world_state.world_id,
+        "target_arrival_datetime": arrival_datetime,
+    }
+
+
+@router.get("/nearest_stops")
+def nearest_transit_stops(
+    lat: float,
+    lon: float,
+    top_n: int = 5,
+    city_id: str | None = None,
+    world_state=Depends(get_active_world_state),
+):
+    """Return the nearest public transit stops to a coordinate, with walking distances."""
+    results = RoutingService(world_state).nearest_transit_stops(lat, lon, top_n, city_id)
+    return {"stops": results, "count": len(results)}

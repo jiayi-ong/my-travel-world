@@ -20,6 +20,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from travel_world.manager.world_manager import WorldManager
 from travel_world.services.session_service import SessionService
 from travel_world.api.routes import world, flights, hotels, routing, attractions, events, session, weather, restaurants
+from travel_world.api.routes.transit import router as transit_router
+from travel_world.api.routes.oracle import router as oracle_router
 
 
 def create_app(worlds_root: str | None = None) -> FastAPI:
@@ -67,6 +69,8 @@ def create_app(worlds_root: str | None = None) -> FastAPI:
     app.include_router(session.router)
     app.include_router(weather.router)
     app.include_router(restaurants.router)
+    app.include_router(transit_router)
+    app.include_router(oracle_router)
 
     @app.get("/health")
     def health():

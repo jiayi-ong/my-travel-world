@@ -10,14 +10,19 @@ from __future__ import annotations
 import networkx as nx
 
 from travel_world.core.entities import (
+    AreaAttraction,
     Attraction,
     City,
     District,
     EventVenue,
     Hotel,
     Location,
+    PublicAmenity,
     Region,
     Restaurant,
+    ServiceVenue,
+    TransitLine,
+    TransitStop,
     TransportEdge,
     TransportHub,
 )
@@ -32,6 +37,10 @@ _LOCATION_TYPE_MAP: dict[str, type[Location]] = {
     LocationType.RESTAURANT.value: Restaurant,
     LocationType.EVENT_VENUE.value: EventVenue,
     LocationType.TRANSPORT_HUB.value: TransportHub,
+    LocationType.TRANSIT_STOP.value: TransitStop,
+    LocationType.PUBLIC_AMENITY.value: PublicAmenity,
+    LocationType.SERVICE_VENUE.value: ServiceVenue,
+    LocationType.AREA_ATTRACTION.value: AreaAttraction,
 }
 
 
@@ -64,6 +73,7 @@ class GeoLayer(BaseLayer):
         districts: dict[str, District],
         locations: dict[str, Location],
         transport_edges: dict[str, TransportEdge],
+        transit_lines: dict[str, TransitLine] | None = None,
     ) -> None:
         super().__init__(meta)
         self.regions: dict[str, Region] = regions
@@ -71,6 +81,7 @@ class GeoLayer(BaseLayer):
         self.districts: dict[str, District] = districts
         self.locations: dict[str, Location] = locations
         self.transport_edges: dict[str, TransportEdge] = transport_edges
+        self.transit_lines: dict[str, TransitLine] = transit_lines or {}
         self._graph: nx.MultiDiGraph = self._build_graph()
 
     def _build_graph(self) -> nx.MultiDiGraph:
@@ -172,6 +183,9 @@ class GeoLayer(BaseLayer):
             "transport_edges": {
                 k: v.model_dump(mode="json") for k, v in self.transport_edges.items()
             },
+            "transit_lines": {
+                k: v.model_dump(mode="json") for k, v in self.transit_lines.items()
+            },
         }
 
     @classmethod
@@ -195,7 +209,10 @@ class GeoLayer(BaseLayer):
         transport_edges: dict[str, TransportEdge] = {
             k: TransportEdge.model_validate(v) for k, v in data["transport_edges"].items()
         }
-        return cls(meta, regions, cities, districts, locations, transport_edges)
+        transit_lines: dict[str, TransitLine] = {
+            k: TransitLine(**v) for k, v in data.get("transit_lines", {}).items()
+        }
+        return cls(meta, regions, cities, districts, locations, transport_edges, transit_lines)
 
     # ------------------------------------------------------------------
     # Validation & summary
@@ -239,6 +256,8 @@ class GeoLayer(BaseLayer):
             key = edge.mode.value
             edges_by_mode[key] = edges_by_mode.get(key, 0) + 1
 
+        transit_stop_count = locations_by_type.get(LocationType.TRANSIT_STOP.value, 0)
+
         return {
             "layer_id": self.layer_id,
             "num_regions": len(self.regions),
@@ -250,4 +269,20 @@ class GeoLayer(BaseLayer):
             "edges_by_mode": edges_by_mode,
             "num_graph_nodes": self._graph.number_of_nodes(),
             "num_graph_edges": self._graph.number_of_edges(),
+            "num_transit_lines": len(self.transit_lines),
+            "num_transit_stops": transit_stop_count,
         }
+
+    def get_transit_lines_for_city(self, city_id: str) -> list[TransitLine]:
+        """Return all transit lines serving a specific city."""
+        return [line for line in self.transit_lines.values() if line.city_id == city_id]
+
+    def get_transit_stops(self, city_id: str | None = None) -> list:
+        """Return all locations of type TRANSIT_STOP, optionally filtered by city."""
+        stops = [
+            loc for loc in self.locations.values()
+            if loc.location_type == LocationType.TRANSIT_STOP
+        ]
+        if city_id:
+            stops = [s for s in stops if s.city_id == city_id]
+        return stops
