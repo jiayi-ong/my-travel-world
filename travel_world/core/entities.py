@@ -16,10 +16,14 @@ from travel_world.core.enums import (
     AmenityType,
     AttractionCategory,
     CabinClass,
+    CityArchetype,
     ClimateZone,
     DistrictType,
     EventCategory,
     LocationType,
+    PublicAmenityType,
+    ServiceVenueCategory,
+    TransitLineType,
     TransportMode,
     TravelPace,
     TravelStyle,
@@ -152,6 +156,8 @@ class City(BaseModel):
     dominant_cuisines: list[str] = []
     dominant_event_categories: list[str] = []
     vibe_summary: str = ""
+    city_archetype: CityArchetype = CityArchetype.CULTURAL_CAPITAL
+    dominant_attraction_categories: list[str] = []
 
 
 class District(BaseModel):
@@ -283,6 +289,111 @@ class TransportHub(Location):
     hub_type: str  # "airport" | "station" | "port" | "bus_terminal"
     iata_code: str | None = None
     connections: list[str] = []  # list of connected hub location_ids
+
+
+class TransitStop(Location):
+    """
+    A public transit stop (metro station, bus stop, tram stop).
+
+    Layer: GeoLayer. TransitStop entities are placed near attraction clusters
+    and connected via METRO/BUS edges in the transport graph. Each stop
+    belongs to one or more transit lines.
+    """
+    line_ids: list[str] = []          # transit line IDs this stop serves
+    stop_number: int = 0              # sequential position on the primary line
+    is_interchange: bool = False      # True if served by 2+ lines
+    accessible: bool = True
+
+
+class PublicAmenity(Location):
+    """
+    A public safety or health amenity (hospital, police station, pharmacy, etc.).
+
+    Layer: GeoLayer. Included so agents can answer questions about safety and
+    emergency services near a location. Not bookable.
+    """
+    amenity_type: PublicAmenityType
+    is_24_hours: bool = False
+    phone_number: str = ""
+    emergency_services: bool = False
+
+
+class ServiceVenue(Location):
+    """
+    A fixed-location entertainment or lifestyle service open on regular hours.
+
+    Unlike Event entities (one-time occurrences) and Attraction entities (static
+    landmarks), ServiceVenue represents recurring commercial services such as
+    spas, cinemas, and shopping malls. Follows the same open/close hour pattern
+    as Restaurant.
+
+    Layer: GeoLayer.
+    """
+    category: ServiceVenueCategory
+    opening_time: str = "09:00"       # "HH:MM"
+    closing_time: str = "22:00"       # "HH:MM"
+    average_spend_per_person: float = 20.0
+    min_duration_hours: float = 1.0
+    max_duration_hours: float = 3.0
+    requires_reservation: bool = False
+    age_restriction: int | None = None   # minimum age, None = no restriction
+    indoor: bool = True
+    dress_code: str = ""
+
+
+class AreaEntrance(BaseModel):
+    """
+    A named entry/exit point for an AreaAttraction.
+
+    Entrances are used as routing targets — an agent navigating to a large park
+    should route to a specific entrance, not the centroid of the area.
+    """
+    entrance_id: str
+    name: str                         # e.g. "North Gate", "Main Entrance"
+    coordinates: Coordinates
+    is_main_entrance: bool = False
+    accessible: bool = True
+    notes: str = ""                   # e.g. "Closes at sunset", "Parking available"
+
+
+class AreaAttraction(Attraction):
+    """
+    A tourist attraction that spans a geographic area rather than a point.
+
+    Examples: large national parks, sprawling palace grounds, botanical gardens,
+    historic city centres, beachfronts.
+
+    The boundary_polygon gives map renderers the area shape. Agents should use
+    entrances (not the centroid) as routing targets. sub_areas lists named
+    zones within the area for itinerary specificity.
+
+    Layer: GeoLayer — stored in locations dict alongside point Attractions.
+    """
+    boundary_polygon: list[Coordinates] = []   # simplified polygon (4-12 vertices)
+    area_sqkm: float = 0.0
+    entrances: list[AreaEntrance] = []
+    sub_areas: list[str] = []                  # named zones within the area
+    internal_walking_paths: bool = True
+    estimated_visit_hours: float = 2.0         # typical visit duration
+
+
+class TransitLine(BaseModel):
+    """
+    A public transit route composed of an ordered sequence of TransitStop IDs.
+
+    Layer: GeoLayer — stored in a separate transit_lines dict in GeoLayer.
+    TransitLine is not a Location (it has no single coordinate); it is a
+    route entity that links a sequence of TransitStop locations.
+    """
+    line_id: str
+    name: str                         # e.g. "Red Line", "Bus 42"
+    line_type: TransitLineType
+    city_id: str
+    color: str = "#0000FF"            # hex color for map rendering
+    stop_ids: list[str] = []          # ordered list of TransitStop location_ids
+    frequency_per_hour: int = 6       # departures per hour
+    operating_hours: str = "06:00-23:00"
+    fare: float = 2.50
 
 
 # ---------------------------------------------------------------------------

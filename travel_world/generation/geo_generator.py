@@ -18,6 +18,8 @@ import random
 from pathlib import Path
 
 from travel_world.core.entities import (
+    AreaAttraction,
+    AreaEntrance,
     Attraction,
     City,
     Coordinates,
@@ -25,20 +27,28 @@ from travel_world.core.entities import (
     EventVenue,
     Hotel,
     Location,
+    PublicAmenity,
     RatingsSummary,
     Region,
     Restaurant,
     Review,
+    ServiceVenue,
+    TransitLine,
+    TransitStop,
     TransportEdge,
     TransportHub,
 )
 from travel_world.core.enums import (
     AmenityType,
     AttractionCategory,
+    CityArchetype,
     ClimateZone,
     DistrictType,
     EventCategory,
     LocationType,
+    PublicAmenityType,
+    ServiceVenueCategory,
+    TransitLineType,
     TransportMode,
 )
 from travel_world.generation.fixture_loader import FixtureLoader
@@ -80,9 +90,98 @@ class GeoGenerator:
     CUISINE_TYPES = [
         "Italian", "French", "Japanese", "Chinese", "Mexican", "Indian",
         "Mediterranean", "American", "Thai", "Spanish", "Greek", "Vietnamese",
+        "Seafood",
     ]
     FLIGHT_SPEED_KMH = 850
     HAVERSINE_EARTH_RADIUS_KM = 6371
+
+    # Maps each archetype to its weighted district type distribution.
+    ARCHETYPE_DISTRICT_WEIGHTS: dict[str, dict[str, int]] = {
+        "beach_resort":       {"touristic": 4, "waterfront": 4, "nightlife": 2, "residential": 2, "business": 1, "cultural": 1, "historic": 1},
+        "cultural_capital":   {"cultural": 4, "historic": 3, "touristic": 3, "residential": 2, "business": 1, "nightlife": 1, "waterfront": 1},
+        "tech_hub":           {"business": 5, "residential": 3, "cultural": 2, "touristic": 1, "nightlife": 1, "historic": 1, "waterfront": 1},
+        "mountain_retreat":   {"touristic": 3, "residential": 3, "cultural": 2, "historic": 2, "nightlife": 1, "business": 1, "waterfront": 0},
+        "historic_city":      {"historic": 5, "cultural": 3, "touristic": 3, "residential": 2, "business": 1, "nightlife": 1, "waterfront": 0},
+        "nightlife_city":     {"nightlife": 5, "touristic": 3, "residential": 2, "business": 2, "waterfront": 1, "cultural": 1, "historic": 1},
+        "nature_escape":      {"touristic": 3, "residential": 3, "waterfront": 2, "cultural": 2, "historic": 1, "business": 1, "nightlife": 1},
+        "foodie_haven":       {"touristic": 3, "cultural": 3, "nightlife": 2, "residential": 2, "business": 2, "waterfront": 1, "historic": 1},
+        "business_center":    {"business": 5, "residential": 3, "cultural": 1, "touristic": 1, "nightlife": 2, "historic": 1, "waterfront": 1},
+        "adventure_destination": {"touristic": 4, "residential": 2, "waterfront": 2, "cultural": 1, "historic": 1, "nightlife": 1, "business": 1},
+    }
+
+    ARCHETYPE_ATTRACTION_CATEGORIES: dict[str, list[str]] = {
+        "beach_resort":         ["beach", "park", "nightlife", "food_market"],
+        "cultural_capital":     ["museum", "gallery", "cultural_site", "landmark"],
+        "tech_hub":             ["museum", "landmark", "shopping", "gallery"],
+        "mountain_retreat":     ["nature_reserve", "viewpoint", "park", "historic_site"],
+        "historic_city":        ["historic_site", "landmark", "cultural_site", "museum"],
+        "nightlife_city":       ["nightlife", "food_market", "shopping", "landmark"],
+        "nature_escape":        ["nature_reserve", "park", "viewpoint", "beach"],
+        "foodie_haven":         ["food_market", "cultural_site", "landmark", "shopping"],
+        "business_center":      ["landmark", "museum", "shopping", "gallery"],
+        "adventure_destination": ["nature_reserve", "park", "viewpoint", "beach"],
+    }
+
+    ARCHETYPE_EVENT_CATEGORIES: dict[str, list[str]] = {
+        "beach_resort":         ["festival", "music", "sports"],
+        "cultural_capital":     ["culture", "theater", "exhibition"],
+        "tech_hub":             ["exhibition", "culture", "comedy"],
+        "mountain_retreat":     ["festival", "sports", "market"],
+        "historic_city":        ["culture", "exhibition", "theater"],
+        "nightlife_city":       ["music", "comedy", "festival"],
+        "nature_escape":        ["festival", "sports", "market"],
+        "foodie_haven":         ["food", "market", "festival"],
+        "business_center":      ["exhibition", "culture", "comedy"],
+        "adventure_destination": ["sports", "festival", "music"],
+    }
+
+    ARCHETYPE_CUISINES: dict[str, list[str]] = {
+        "beach_resort":         ["Mediterranean", "Seafood", "American"],
+        "cultural_capital":     ["French", "Italian", "Mediterranean"],
+        "tech_hub":             ["Japanese", "American", "Indian"],
+        "mountain_retreat":     ["American", "Italian", "Greek"],
+        "historic_city":        ["French", "Mediterranean", "Spanish"],
+        "nightlife_city":       ["Mexican", "American", "Vietnamese"],
+        "nature_escape":        ["American", "Mediterranean", "Thai"],
+        "foodie_haven":         ["French", "Japanese", "Italian"],
+        "business_center":      ["Japanese", "French", "American"],
+        "adventure_destination": ["American", "Mexican", "Thai"],
+    }
+
+    TRANSIT_LINE_NAMES = ["Red Line", "Blue Line", "Green Line", "Yellow Line", "Orange Line", "Purple Line", "Silver Line", "Gold Line"]
+    TRANSIT_COLORS = {"Red Line": "#E53E3E", "Blue Line": "#3182CE", "Green Line": "#38A169", "Yellow Line": "#D69E2E", "Orange Line": "#DD6B20", "Purple Line": "#805AD5", "Silver Line": "#718096", "Gold Line": "#B7791F"}
+
+    SERVICE_VENUE_HOURS: dict[str, tuple[str, str]] = {
+        "spa":               ("09:00", "21:00"),
+        "arcade":            ("10:00", "23:00"),
+        "cinema":            ("10:00", "24:00"),
+        "shopping_mall":     ("10:00", "22:00"),
+        "bowling_alley":     ("11:00", "24:00"),
+        "escape_room":       ("10:00", "22:00"),
+        "fitness_center":    ("06:00", "22:00"),
+        "karaoke":           ("12:00", "03:00"),
+        "comedy_club":       ("18:00", "02:00"),
+        "casino":            ("00:00", "23:59"),
+        "theme_park":        ("09:00", "20:00"),
+        "aquarium":          ("09:00", "18:00"),
+        "zoo":               ("09:00", "17:00"),
+        "botanical_garden":  ("08:00", "18:00"),
+        "water_park":        ("10:00", "19:00"),
+    }
+    SERVICE_VENUE_SPEND: dict[str, tuple[float, float]] = {
+        "spa": (60, 200), "arcade": (10, 30), "cinema": (12, 25),
+        "shopping_mall": (30, 150), "bowling_alley": (15, 40), "escape_room": (25, 50),
+        "fitness_center": (10, 30), "karaoke": (20, 60), "comedy_club": (25, 60),
+        "casino": (50, 500), "theme_park": (50, 120), "aquarium": (20, 40),
+        "zoo": (20, 40), "botanical_garden": (10, 25), "water_park": (30, 70),
+    }
+    SERVICE_VENUE_DURATION: dict[str, tuple[float, float]] = {
+        "spa": (1.5, 4.0), "arcade": (1.0, 3.0), "cinema": (1.5, 3.0),
+        "shopping_mall": (1.5, 4.0), "bowling_alley": (1.5, 3.0), "escape_room": (1.0, 1.5),
+        "fitness_center": (1.0, 2.0), "karaoke": (2.0, 4.0), "comedy_club": (1.5, 2.5),
+        "casino": (2.0, 6.0), "theme_park": (4.0, 10.0), "aquarium": (1.5, 3.0),
+        "zoo": (2.0, 4.0), "botanical_garden": (1.0, 2.5), "water_park": (3.0, 6.0),
+    }
     _DENSITY_PROFILES_PATH = (
         Path(__file__).resolve().parents[2] / "data" / "config" / "district_density_profiles.json"
     )
@@ -135,6 +234,7 @@ class GeoGenerator:
             districts=skeleton["districts"],
             locations=all_locations,
             transport_edges=skeleton["transport_edges"],
+            transit_lines=enriched["transit_lines"],
         )
 
     # ── Pass 1: Topology ─────────────────────────────────────────────────────
@@ -426,24 +526,29 @@ class GeoGenerator:
         climate_zone = self.rng.choice(list(ClimateZone))
         transport_quality = round(self.rng.uniform(0.3, 1.0), 3)
         travel_advisory = self._generate_travel_advisory(safety_score)
-        # Dominant cuisines: 2-3 drawn with mild bias toward richer cuisines for high-tier cities
-        high_tier_cuisines = ["French", "Japanese", "Mediterranean", "Spanish", "Italian"]
-        low_tier_cuisines = ["Indian", "Mexican", "Thai", "Vietnamese", "Chinese"]
-        if economic_tier >= 4:
-            cuisine_pool = high_tier_cuisines + self.CUISINE_TYPES
-        elif economic_tier <= 2:
-            cuisine_pool = low_tier_cuisines + self.CUISINE_TYPES
-        else:
-            cuisine_pool = self.CUISINE_TYPES
+        # Assign city archetype
+        archetype = self.rng.choice(list(CityArchetype))
+        # Dominant cuisines: derive from archetype, with possible random addition
+        archetype_cuisines = self.ARCHETYPE_CUISINES[archetype.value]
         n_dominant_cuisines = self.rng.randint(2, 3)
-        dominant_cuisines = list(dict.fromkeys(self.rng.choices(cuisine_pool, k=n_dominant_cuisines * 3)))[:n_dominant_cuisines]
-        # Dominant event categories: 2-3 random draws from EventCategory
-        all_event_cats = [c.value for c in EventCategory]
+        cuisine_pool = list(archetype_cuisines)
+        if self.rng.random() < 0.4:
+            extra = self.rng.choice(self.CUISINE_TYPES)
+            cuisine_pool.append(extra)
+        self.rng.shuffle(cuisine_pool)
+        dominant_cuisines = list(dict.fromkeys(cuisine_pool))[:n_dominant_cuisines]
+        # Dominant event categories from archetype
+        archetype_events = self.ARCHETYPE_EVENT_CATEGORIES[archetype.value]
         n_dominant_events = self.rng.randint(2, 3)
-        dominant_event_categories = self.rng.sample(all_event_cats, n_dominant_events)
+        dominant_event_categories = list(archetype_events[:n_dominant_events])
+        # Dominant attraction categories from archetype
+        archetype_attractions = self.ARCHETYPE_ATTRACTION_CATEGORIES[archetype.value]
+        n_dominant_attractions = self.rng.randint(2, 3)
+        dominant_attraction_categories = list(archetype_attractions[:n_dominant_attractions])
         vibe_summary = self._generate_vibe_summary(
             name, region.name, economic_tier, tourism_density,
             safety_score, climate_zone, dominant_cuisines, dominant_event_categories,
+            archetype=archetype,
         )
         return City(
             city_id=city_id,
@@ -462,6 +567,8 @@ class GeoGenerator:
             dominant_cuisines=dominant_cuisines,
             dominant_event_categories=dominant_event_categories,
             vibe_summary=vibe_summary,
+            city_archetype=archetype,
+            dominant_attraction_categories=dominant_attraction_categories,
         )
 
     def _generate_district(self, world_id: str, city: City, idx: int) -> District:
@@ -470,7 +577,11 @@ class GeoGenerator:
         lat = city.coordinates.lat + self.rng.uniform(-0.05, 0.05)
         lon = city.coordinates.lon + self.rng.uniform(-0.05, 0.05)
         district_id = f"district_{world_id}_{idx:04d}"
-        district_type = self.rng.choice(list(DistrictType))
+        # Use archetype-weighted district type selection
+        weights_dict = self.ARCHETYPE_DISTRICT_WEIGHTS.get(city.city_archetype.value, {})
+        district_types = list(DistrictType)
+        weights = [weights_dict.get(dt.value, 1) for dt in district_types]
+        district_type = self.rng.choices(district_types, weights=weights, k=1)[0]
         safety_score = round(self.rng.uniform(0.2, 1.0), 3)
         walkability_score = round(self.rng.uniform(0.2, 1.0), 3)
         noise_level = round(self.rng.uniform(0.0, 1.0), 3)
@@ -530,13 +641,20 @@ class GeoGenerator:
     def _enrich_attributes(self, world_id: str, skeleton: dict) -> dict:
         """
         Second pass: generate non-hub locations (hotels, attractions, restaurants,
-        event venues) and assign reviews/ratings from fixture database to all locations.
+        event venues, service venues, public amenities, area attractions, transit
+        stops) and assign reviews/ratings from fixture database to all locations.
         """
         locations: dict[str, Location] = {}
+        transit_lines: dict[str, TransitLine] = {}
         loc_idx = 0
 
         districts: dict[str, District] = skeleton["districts"]
         cities: dict[str, City] = skeleton["cities"]
+
+        # Track per-city districts for city-level generation later
+        city_districts: dict[str, list[District]] = {}
+        for district in districts.values():
+            city_districts.setdefault(district.city_id, []).append(district)
 
         for district_id, district in districts.items():
             city = cities[district.city_id]
@@ -565,7 +683,431 @@ class GeoGenerator:
                 locations[venue.location_id] = venue
             loc_idx += len(venues)
 
-        return {"locations": locations}
+            # Service venues per district
+            service_venues = self._generate_service_venues_in_district(world_id, district, city, loc_idx)
+            for sv in service_venues:
+                locations[sv.location_id] = sv
+            loc_idx += len(service_venues)
+
+        # City-level generation: public amenities, area attractions, transit
+        transit_stop_idx = 0
+        transit_line_idx = 0
+        area_attraction_idx = 0
+        public_amenity_idx = 0
+
+        for city_id, city in cities.items():
+            city_dist_list = city_districts.get(city_id, [])
+
+            # Public amenities (1-2 hospitals + 1-2 police stations per city)
+            amenities = self._generate_public_amenities_for_city(
+                world_id, city, city_dist_list, public_amenity_idx
+            )
+            for am in amenities:
+                locations[am.location_id] = am
+            public_amenity_idx += len(amenities)
+
+            # AreaAttractions: 1-2 per city (large parks/reserves)
+            city_attractions = [
+                loc for loc in locations.values()
+                if loc.city_id == city_id and loc.location_type == LocationType.ATTRACTION
+            ]
+            area_attrs = self._generate_area_attractions_for_city(
+                world_id, city, city_dist_list, city_attractions, area_attraction_idx
+            )
+            for aa in area_attrs:
+                locations[aa.location_id] = aa
+            area_attraction_idx += len(area_attrs)
+
+            # Transit lines + stops per city
+            city_all_attractions = [
+                loc for loc in locations.values()
+                if loc.city_id == city_id and loc.location_type in (
+                    LocationType.ATTRACTION, LocationType.AREA_ATTRACTION
+                )
+            ]
+            new_stops, new_lines, new_edges = self._generate_transit_for_city(
+                world_id, city, city_dist_list, city_all_attractions,
+                transit_stop_idx, transit_line_idx,
+            )
+            for stop in new_stops:
+                locations[stop.location_id] = stop
+            transit_stop_idx += len(new_stops)
+            for line in new_lines:
+                transit_lines[line.line_id] = line
+            transit_line_idx += len(new_lines)
+            # new_edges are TransportEdge objects; add to skeleton
+            for edge in new_edges:
+                skeleton["transport_edges"][edge.edge_id] = edge
+
+        return {"locations": locations, "transit_lines": transit_lines}
+
+    # ── Service venue generation ───────────────────────────────────────────────
+
+    _SERVICE_VENUE_NAMES: dict[str, list[str]] = {
+        "spa": ["Zen Spa", "Serenity Wellness", "The Retreat", "Pure Bliss Spa"],
+        "arcade": ["Game Zone", "Pixel Palace", "Retro Arcade", "Fun World"],
+        "cinema": ["StarPlex Cinema", "Cinepolis", "The Reel", "Grand Cinema"],
+        "shopping_mall": ["City Mall", "Grand Bazaar", "The Plaza", "Metro Mall"],
+        "bowling_alley": ["Strike Zone", "Bowl-O-Rama", "Lucky Lanes"],
+        "escape_room": ["Escape Masters", "The Puzzle Room", "Breakout"],
+        "fitness_center": ["FitLife", "IronWorks Gym", "Urban Fitness"],
+        "karaoke": ["Sing Star", "Karaoke Night", "The Mic Room"],
+        "comedy_club": ["Laugh Factory", "The Punchline", "Comedy Corner"],
+        "casino": ["Royal Casino", "The Golden Deck", "Lucky Star Casino"],
+        "theme_park": ["Adventure World", "Fun Kingdom", "Thrill Park"],
+        "aquarium": ["Ocean World", "Sea Life Center", "The Aquarium"],
+        "zoo": ["City Zoo", "Wildlife Park", "Animal Kingdom"],
+        "botanical_garden": ["Botanical Gardens", "The Garden", "Green Paradise"],
+        "water_park": ["Splash Zone", "AquaFun", "Wave World"],
+    }
+
+    _DISTRICT_SERVICE_VENUE_WEIGHTS: dict[str, list[str]] = {
+        "nightlife": ["karaoke", "comedy_club", "casino", "cinema"],
+        "touristic": ["spa", "shopping_mall", "theme_park", "aquarium"],
+        "cultural": ["botanical_garden", "zoo", "aquarium"],
+        "business": ["fitness_center", "spa", "cinema"],
+        "residential": ["cinema", "bowling_alley", "fitness_center"],
+        "historic": ["botanical_garden", "spa", "cinema"],
+        "waterfront": ["spa", "aquarium", "water_park"],
+    }
+
+    def _generate_service_venues_in_district(
+        self, world_id: str, district: District, city: City, start_idx: int
+    ) -> list[ServiceVenue]:
+        """Generate ServiceVenue entities for one district."""
+        n = self._density(district, "service_venues")
+        if n == 0:
+            return []
+        district_type_val = district.district_type.value
+        preferred_cats = self._DISTRICT_SERVICE_VENUE_WEIGHTS.get(district_type_val, list(self._SERVICE_VENUE_NAMES.keys()))
+        # Build weighted pool
+        all_cat_vals = list(self._SERVICE_VENUE_NAMES.keys())
+        weights = [3 if c in preferred_cats else 1 for c in all_cat_vals]
+
+        service_venues: list[ServiceVenue] = []
+        for i in range(n):
+            cat_val = self.rng.choices(all_cat_vals, weights=weights, k=1)[0]
+            category = ServiceVenueCategory(cat_val)
+            location_id = f"sv_{world_id}_{start_idx + i:04d}"
+            lat = district.coordinates.lat + self.rng.uniform(-0.01, 0.01)
+            lon = district.coordinates.lon + self.rng.uniform(-0.01, 0.01)
+            name_opts = self._SERVICE_VENUE_NAMES.get(cat_val, [f"{cat_val.replace('_',' ').title()}"])
+            name = self.rng.choice(name_opts)
+            hours = self.SERVICE_VENUE_HOURS.get(cat_val, ("09:00", "22:00"))
+            spend_range = self.SERVICE_VENUE_SPEND.get(cat_val, (10.0, 50.0))
+            dur_range = self.SERVICE_VENUE_DURATION.get(cat_val, (1.0, 3.0))
+            avg_spend = round(self.rng.uniform(*spend_range), 2)
+            min_dur = dur_range[0]
+            max_dur = dur_range[1]
+            service_venues.append(ServiceVenue(
+                location_id=location_id,
+                name=name,
+                district_id=district.district_id,
+                city_id=city.city_id,
+                coordinates=Coordinates(lat=round(lat, 6), lon=round(lon, 6)),
+                location_type=LocationType.SERVICE_VENUE,
+                opening_hours={d: f"{hours[0]}-{hours[1]}" for d in
+                               ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
+                capacity=self.rng.randint(20, 500),
+                popularity_score=round(self.rng.uniform(0.2, 1.0), 3),
+                description=f"A {cat_val.replace('_', ' ')} in {district.name}, {city.name}.",
+                tags=["service_venue", cat_val],
+                category=category,
+                opening_time=hours[0],
+                closing_time=hours[1],
+                average_spend_per_person=avg_spend,
+                min_duration_hours=min_dur,
+                max_duration_hours=max_dur,
+                requires_reservation=self.rng.random() < 0.2,
+                indoor=cat_val not in ("water_park", "zoo", "botanical_garden"),
+            ))
+        return service_venues
+
+    # ── Public amenity generation ──────────────────────────────────────────────
+
+    _PUBLIC_AMENITY_NAMES: dict[str, list[str]] = {
+        "hospital": ["{city} General Hospital", "{city} Medical Center", "St. {city} Hospital", "City Hospital"],
+        "police_station": ["{city} Police Department", "Central Police Station", "{district} Police Post"],
+        "pharmacy": ["PharmaCare", "MediCare Pharmacy", "Health Plus"],
+        "clinic": ["{city} Clinic", "Community Health Center", "Wellness Clinic"],
+    }
+
+    def _generate_public_amenities_for_city(
+        self, world_id: str, city: City, districts: list[District], start_idx: int
+    ) -> list[PublicAmenity]:
+        """Generate public amenities (hospitals, police stations) for a city."""
+        if not districts:
+            return []
+        amenities: list[PublicAmenity] = []
+        # 1-2 hospitals
+        n_hospitals = self.rng.randint(1, 2)
+        for i in range(n_hospitals):
+            district = self.rng.choice(districts)
+            name_template = self.rng.choice(self._PUBLIC_AMENITY_NAMES["hospital"])
+            name = name_template.format(city=city.name, district=district.name)
+            lat = district.coordinates.lat + self.rng.uniform(-0.01, 0.01)
+            lon = district.coordinates.lon + self.rng.uniform(-0.01, 0.01)
+            location_id = f"amenity_{world_id}_{start_idx:04d}"
+            start_idx += 1
+            amenities.append(PublicAmenity(
+                location_id=location_id,
+                name=name,
+                district_id=district.district_id,
+                city_id=city.city_id,
+                coordinates=Coordinates(lat=round(lat, 6), lon=round(lon, 6)),
+                location_type=LocationType.PUBLIC_AMENITY,
+                opening_hours={d: "00:00-23:59" for d in
+                               ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
+                capacity=self.rng.randint(50, 500),
+                popularity_score=0.5,
+                description=f"Public hospital serving {city.name}.",
+                tags=["public_amenity", "hospital"],
+                amenity_type=PublicAmenityType.HOSPITAL,
+                is_24_hours=True,
+                emergency_services=True,
+            ))
+        # 1-2 police stations
+        n_police = self.rng.randint(1, 2)
+        for i in range(n_police):
+            district = self.rng.choice(districts)
+            name_template = self.rng.choice(self._PUBLIC_AMENITY_NAMES["police_station"])
+            name = name_template.format(city=city.name, district=district.name)
+            lat = district.coordinates.lat + self.rng.uniform(-0.01, 0.01)
+            lon = district.coordinates.lon + self.rng.uniform(-0.01, 0.01)
+            location_id = f"amenity_{world_id}_{start_idx:04d}"
+            start_idx += 1
+            amenities.append(PublicAmenity(
+                location_id=location_id,
+                name=name,
+                district_id=district.district_id,
+                city_id=city.city_id,
+                coordinates=Coordinates(lat=round(lat, 6), lon=round(lon, 6)),
+                location_type=LocationType.PUBLIC_AMENITY,
+                opening_hours={d: "00:00-23:59" for d in
+                               ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
+                capacity=50,
+                popularity_score=0.3,
+                description=f"Police station serving {district.name}, {city.name}.",
+                tags=["public_amenity", "police_station"],
+                amenity_type=PublicAmenityType.POLICE_STATION,
+                is_24_hours=True,
+                emergency_services=True,
+            ))
+        return amenities
+
+    # ── Area attraction generation ─────────────────────────────────────────────
+
+    _AREA_SUB_AREAS = [
+        "Rose Garden", "Lake Area", "Children's Playground", "Picnic Grounds",
+        "Sports Fields", "Nature Trail", "Sculpture Garden", "Fountain Plaza",
+        "Wilderness Zone", "Botanical Section",
+    ]
+    _AREA_ENTRANCE_NAMES = ["Main Entrance", "North Gate", "South Gate", "East Gate", "West Gate"]
+
+    def _generate_area_attractions_for_city(
+        self, world_id: str, city: City, districts: list[District],
+        existing_attractions: list, start_idx: int
+    ) -> list[AreaAttraction]:
+        """Generate 1-2 AreaAttractions for a city."""
+        if not districts:
+            return []
+        n = self.rng.randint(1, 2)
+        area_attractions: list[AreaAttraction] = []
+        for i in range(n):
+            district = self.rng.choice(districts)
+            lat = district.coordinates.lat + self.rng.uniform(-0.008, 0.008)
+            lon = district.coordinates.lon + self.rng.uniform(-0.008, 0.008)
+            location_id = f"area_attr_{world_id}_{start_idx + i:04d}"
+            # Category: park or nature_reserve
+            category = self.rng.choice([AttractionCategory.PARK, AttractionCategory.NATURE_RESERVE])
+            area_sqkm = round(self.rng.uniform(0.5, 5.0), 2)
+            # Build boundary polygon: 6 points at 60° intervals
+            polygon: list[Coordinates] = []
+            for angle_deg in range(0, 360, 60):
+                angle_rad = math.radians(angle_deg)
+                radius = self.rng.uniform(0.005, 0.02)
+                p_lat = lat + radius * math.cos(angle_rad)
+                p_lon = lon + radius * math.sin(angle_rad)
+                polygon.append(Coordinates(lat=round(p_lat, 6), lon=round(p_lon, 6)))
+            # Entrances at a subset of polygon points
+            entrance_names = self.rng.sample(self._AREA_ENTRANCE_NAMES, min(4, len(self._AREA_ENTRANCE_NAMES)))
+            entrances: list[AreaEntrance] = []
+            for j, ename in enumerate(entrance_names):
+                e_coords = polygon[j % len(polygon)]
+                entrances.append(AreaEntrance(
+                    entrance_id=f"{location_id}_entrance_{j}",
+                    name=ename,
+                    coordinates=e_coords,
+                    is_main_entrance=(j == 0),
+                    accessible=True,
+                ))
+            # Sub areas
+            n_sub = self.rng.randint(3, 5)
+            sub_areas = self.rng.sample(self._AREA_SUB_AREAS, min(n_sub, len(self._AREA_SUB_AREAS)))
+            cat_label = category.value.replace("_", " ").title()
+            name = self.rng.choice([
+                f"{city.name} {cat_label}",
+                f"{district.name} {cat_label}",
+                f"Great {cat_label} of {city.name}",
+            ])
+            reviews, ratings = self._assign_reviews("attraction", self.rng.randint(5, 15))
+            area_attractions.append(AreaAttraction(
+                location_id=location_id,
+                name=name,
+                district_id=district.district_id,
+                city_id=city.city_id,
+                coordinates=Coordinates(lat=round(lat, 6), lon=round(lon, 6)),
+                location_type=LocationType.AREA_ATTRACTION,
+                opening_hours=self._attraction_opening_hours(),
+                capacity=self.rng.randint(500, 10_000),
+                popularity_score=round(self.rng.uniform(0.5, 1.0), 3),
+                ratings=ratings,
+                reviews=reviews,
+                description=f"A large {category.value.replace('_', ' ')} area in {city.name}.",
+                tags=["area_attraction", category.value],
+                category=category,
+                duration_hours=round(self.rng.uniform(1.5, 4.0), 1),
+                ticket_price=round(self.rng.uniform(0, 20), 2),
+                weather_sensitivity=round(self.rng.uniform(0.4, 0.9), 3),
+                crowding_base=round(self.rng.uniform(0.3, 0.8), 3),
+                free_entry=self.rng.random() < 0.4,
+                boundary_polygon=polygon,
+                area_sqkm=area_sqkm,
+                entrances=entrances,
+                sub_areas=sub_areas,
+                internal_walking_paths=True,
+                estimated_visit_hours=round(self.rng.uniform(1.5, 4.0), 1),
+            ))
+        return area_attractions
+
+    # ── Transit generation ─────────────────────────────────────────────────────
+
+    def _generate_transit_for_city(
+        self,
+        world_id: str,
+        city: City,
+        districts: list[District],
+        attractions: list,
+        stop_start_idx: int,
+        line_start_idx: int,
+    ) -> tuple[list[TransitStop], list[TransitLine], list[TransportEdge]]:
+        """Generate 2-3 transit lines with stops for a city."""
+        if not districts:
+            return [], [], []
+
+        stops: list[TransitStop] = []
+        lines: list[TransitLine] = []
+        edges: list[TransportEdge] = []
+
+        n_lines = self.rng.randint(2, 3)
+        line_names = self.rng.sample(self.TRANSIT_LINE_NAMES, min(n_lines, len(self.TRANSIT_LINE_NAMES)))
+        all_stop_ids_by_line: list[list[str]] = []
+
+        edge_idx = 99000 + stop_start_idx  # high offset to avoid collision
+
+        for line_i in range(n_lines):
+            line_name = line_names[line_i]
+            color = self.TRANSIT_COLORS.get(line_name, "#0000FF")
+            line_type = TransitLineType.METRO if line_i == 0 else TransitLineType.BUS
+            n_stops = self.rng.randint(8, 12)
+
+            # Anchor stops near attractions, or at random city offsets
+            if len(attractions) >= n_stops:
+                anchors = self.rng.sample(attractions, n_stops)
+                anchor_coords = [(a.coordinates.lat, a.coordinates.lon) for a in anchors]
+            else:
+                anchor_coords = []
+                for _ in range(n_stops):
+                    alat = city.coordinates.lat + self.rng.uniform(-0.04, 0.04)
+                    alon = city.coordinates.lon + self.rng.uniform(-0.04, 0.04)
+                    anchor_coords.append((alat, alon))
+                if attractions:
+                    # Supplement with available attractions
+                    for idx2, a in enumerate(attractions[:n_stops - len(anchor_coords)]):
+                        anchor_coords[idx2] = (a.coordinates.lat, a.coordinates.lon)
+
+            line_stop_ids: list[str] = []
+            line_stops: list[TransitStop] = []
+
+            for s_i, (alat, alon) in enumerate(anchor_coords):
+                offset_lat = self.rng.uniform(-0.003, 0.003)
+                offset_lon = self.rng.uniform(-0.003, 0.003)
+                slat = round(alat + offset_lat, 6)
+                slon = round(alon + offset_lon, 6)
+                stop_id = f"stop_{world_id}_{stop_start_idx:04d}"
+                stop_start_idx += 1
+                district = self.rng.choice(districts)
+                stop = TransitStop(
+                    location_id=stop_id,
+                    name=f"{line_name} — Stop {s_i + 1}",
+                    district_id=district.district_id,
+                    city_id=city.city_id,
+                    coordinates=Coordinates(lat=slat, lon=slon),
+                    location_type=LocationType.TRANSIT_STOP,
+                    opening_hours={d: "06:00-23:00" for d in
+                                   ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]},
+                    capacity=200,
+                    popularity_score=round(self.rng.uniform(0.3, 0.8), 3),
+                    description=f"Transit stop on the {line_name}.",
+                    tags=["transit_stop", line_type.value],
+                    stop_number=s_i,
+                    is_interchange=False,
+                    accessible=self.rng.random() < 0.9,
+                )
+                line_stops.append(stop)
+                line_stop_ids.append(stop_id)
+
+            # Mark interchange stops (appear in 2+ lines)
+            for existing_stop_ids in all_stop_ids_by_line:
+                # (no actual ID overlap since we generate fresh stops, but we mark based on proximity)
+                pass
+
+            stops.extend(line_stops)
+            all_stop_ids_by_line.append(line_stop_ids)
+
+            # Edges between consecutive stops
+            mode = TransportMode.METRO if line_type == TransitLineType.METRO else TransportMode.BUS
+            for s_i in range(len(line_stops) - 1):
+                stop_a = line_stops[s_i]
+                stop_b = line_stops[s_i + 1]
+                dist = self._haversine(
+                    stop_a.coordinates.lat, stop_a.coordinates.lon,
+                    stop_b.coordinates.lat, stop_b.coordinates.lon,
+                )
+                travel_time = max(2.0, (dist / (40.0 if mode == TransportMode.METRO else 25.0)) * 60)
+                edge_id = f"transit_edge_{world_id}_{edge_idx:05d}"
+                edge_idx += 1
+                edges.append(TransportEdge(
+                    edge_id=edge_id,
+                    origin_node_id=stop_a.location_id,
+                    destination_node_id=stop_b.location_id,
+                    mode=mode,
+                    distance_km=round(dist, 3),
+                    base_travel_time_min=round(travel_time, 1),
+                    base_cost=2.50,
+                    frequency_per_day=6 * 17,  # ~6/hour for 17 hours
+                    metadata={"line_id": f"line_{world_id}_{line_start_idx:04d}", "line_name": line_name},
+                ))
+
+            line_id = f"line_{world_id}_{line_start_idx:04d}"
+            line_start_idx += 1
+            lines.append(TransitLine(
+                line_id=line_id,
+                name=line_name,
+                line_type=line_type,
+                city_id=city.city_id,
+                color=color,
+                stop_ids=line_stop_ids,
+                frequency_per_hour=6,
+                operating_hours="06:00-23:00",
+                fare=2.50,
+            ))
+
+            # Update stop line_ids
+            for stop in line_stops:
+                stop.line_ids.append(line_id)
+
+        return stops, lines, edges
 
     def _generate_hotels_in_district(
         self, world_id: str, district: District, city: City, start_idx: int
@@ -723,7 +1265,10 @@ class GeoGenerator:
             location_id = f"attraction_{world_id}_{start_idx + i:04d}"
             lat = district.coordinates.lat + self.rng.uniform(-0.01, 0.01)
             lon = district.coordinates.lon + self.rng.uniform(-0.01, 0.01)
-            category = self.rng.choice(list(AttractionCategory))
+            all_cats = list(AttractionCategory)
+            dominant_cats = getattr(city, "dominant_attraction_categories", [])
+            cat_weights = [3 if cat.value in dominant_cats else 1 for cat in all_cats]
+            category = self.rng.choices(all_cats, weights=cat_weights, k=1)[0]
             duration_hours = round(self.rng.uniform(0.5, 4.0), 1)
             ticket_price = round(self.rng.uniform(0, 50), 2)
             free_entry = ticket_price < 5
@@ -869,6 +1414,7 @@ class GeoGenerator:
         self, name: str, region: str, economic_tier: int, tourism_density: float,
         safety_score: float, climate_zone, dominant_cuisines: list[str],
         dominant_event_categories: list[str],
+        archetype=None,
     ) -> str:
         """Generate a 2-3 sentence prose vibe summary for a city."""
         tier_adj = {1: "budget-conscious", 2: "emerging", 3: "mid-tier", 4: "prosperous", 5: "affluent"}[economic_tier]
@@ -891,8 +1437,12 @@ class GeoGenerator:
         )
         cuisine_str = " and ".join(dominant_cuisines[:2]) if dominant_cuisines else "diverse"
         event_str = " and ".join(dominant_event_categories[:2]) if dominant_event_categories else "varied"
+        archetype_str = ""
+        if archetype is not None:
+            archetype_label = archetype.value.replace("_", " ")
+            archetype_str = f" As a {archetype_label}, it offers a distinctive character shaped by its primary identity."
         return (
-            f"{name} is a {tier_adj} city in {region}, {tourism_adj} by international visitors. "
+            f"{name} is a {tier_adj} city in {region}, {tourism_adj} by international visitors.{archetype_str} "
             f"The climate is {climate_desc}, making it {safety_desc}. "
             f"The food scene leans toward {cuisine_str} cuisine, and the city is known for its vibrant {event_str} scene."
         )

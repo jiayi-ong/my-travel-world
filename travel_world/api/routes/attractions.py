@@ -53,3 +53,32 @@ def get_crowding(attraction_id: str, visit_datetime: str, world_state=Depends(ge
         return AttractionService(world_state).get_crowding(attraction_id, dt)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{attraction_id}/entrances")
+def get_area_entrances(
+    attraction_id: str,
+    world_state=Depends(get_active_world_state),
+):
+    """
+    Return the named entrance/exit points for an AreaAttraction.
+
+    Agents should use entrance coordinates (not the centroid) as routing
+    targets when navigating to large parks or area attractions.
+
+    Returns 404 if the attraction is not an AreaAttraction.
+    """
+    geo = world_state.get_layer("geo")
+    loc = geo.locations.get(attraction_id)
+    if loc is None:
+        raise HTTPException(status_code=404, detail=f"Attraction '{attraction_id}' not found")
+    if not hasattr(loc, "entrances"):
+        raise HTTPException(status_code=404, detail=f"'{attraction_id}' is not an area attraction and has no entrances")
+    return {
+        "attraction_id": attraction_id,
+        "name": loc.name,
+        "entrances": [e.model_dump() for e in loc.entrances],
+        "sub_areas": getattr(loc, "sub_areas", []),
+        "area_sqkm": getattr(loc, "area_sqkm", None),
+        "boundary_polygon": [c.model_dump() for c in getattr(loc, "boundary_polygon", [])],
+    }

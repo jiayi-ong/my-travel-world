@@ -55,6 +55,10 @@ class RoutingService:
             self._traffic: Optional[TrafficLayer] = world_state.get_layer("traffic")
         except KeyError:
             self._traffic = None
+        try:
+            self._weather = world_state.get_layer("weather")
+        except KeyError:
+            self._weather = None
 
     def plan(
         self,
@@ -148,6 +152,7 @@ class RoutingService:
         top_n: int = 10,
         sort_by: str = "distance",
         location_type: Optional[str] = None,
+        location_types: Optional[list[str]] = None,
         city_id: Optional[str] = None,
         mode: str = "walking",
     ) -> list[dict]:
@@ -161,18 +166,26 @@ class RoutingService:
             lat / lon:        Query coordinate.
             top_n:            Maximum results to return.
             sort_by:          "distance" (km) or "travel_time" (minutes).
-            location_type:    Optional LocationType value string to filter results.
+            location_type:    Optional single LocationType value string to filter results.
+            location_types:   Optional list of LocationType value strings (multiple types).
             city_id:          Optional city scope; if None, searches all cities.
             mode:             Transport mode used for travel_time estimation.
                               Speed lookup: walking=5, bus=30, flight=850 km/h, etc.
         """
         speed_kmh = _MODE_SPEED_KMH.get(mode.lower(), WALKING_SPEED_KMH)
 
+        # Normalize filter: prefer location_types (plural); fall back to location_type
+        type_filter: Optional[set[str]] = None
+        if location_types:
+            type_filter = {t.lower() for t in location_types}
+        elif location_type:
+            type_filter = {location_type.lower()}
+
         candidates: list[dict] = []
         for loc in self._geo.locations.values():
             if city_id and loc.city_id != city_id:
                 continue
-            if location_type and loc.location_type.value != location_type.lower():
+            if type_filter and loc.location_type.value not in type_filter:
                 continue
             dist_km = self._haversine(lat, lon, loc.coordinates.lat, loc.coordinates.lon)
             travel_time_min = (dist_km / speed_kmh) * 60 if speed_kmh > 0 else float("inf")
@@ -191,6 +204,22 @@ class RoutingService:
         key = "distance_km" if sort_by == "distance" else "estimated_travel_time_min"
         candidates.sort(key=lambda x: x[key])
         return candidates[:top_n]
+
+    def nearest_transit_stops(
+        self,
+        lat: float,
+        lon: float,
+        top_n: int = 5,
+        city_id: Optional[str] = None,
+    ) -> list[dict]:
+        """Return nearest transit stops to a coordinate with walking distance."""
+        return self.proximity_search(
+            lat=lat, lon=lon, top_n=top_n,
+            sort_by="distance",
+            location_type="transit_stop",
+            city_id=city_id,
+            mode="walking",
+        )
 
     def _plan_walking(
         self,
@@ -398,13 +427,102 @@ class RoutingService:
         return R * 2 * math.asin(math.sqrt(a))
 
     def _apply_congestion_weight(
-        self, edge_id: str, base_time: float, departure_dt: datetime
+        self, edge_id: str, base_time: float, departure_dt: datetime,
+        city_id: Optional[str] = None,
     ) -> float:
-        """Multiply base travel time by the congestion factor at departure time."""
+        """Multiply base travel time by the congestion factor at departure time.
+
+        Optionally applies a weather multiplier if a WeatherLayer is available
+        and city_id is provided.
+        """
         if self._traffic is None:
-            return base_time
-        multiplier = self._traffic.get_multiplier_for_datetime(edge_id, departure_dt)
-        return base_time * multiplier
+            multiplier = 1.0
+        else:
+            multiplier = self._traffic.get_multiplier_for_datetime(edge_id, departure_dt)
+        congested_time = base_time * multiplier
+
+        # Apply weather multiplier if available
+        if self._weather is not None and city_id is not None:
+            try:
+                from travel_world.core.enums import WeatherCondition
+                snapshot = self._weather.get_snapshot(city_id, departure_dt.date().isoformat())
+                condition = getattr(snapshot, "condition", None)
+                weather_multipliers = {
+                    WeatherCondition.STORMY.value: 1.5,
+                    WeatherCondition.SNOWY.value: 1.4,
+                    WeatherCondition.RAINY.value: 1.2,
+                    WeatherCondition.FOGGY.value: 1.15,
+                }
+                cond_val = condition.value if hasattr(condition, "value") else str(condition)
+                weather_mult = weather_multipliers.get(cond_val, 1.0)
+                congested_time *= weather_mult
+            except Exception:
+                pass  # Weather lookup failures are non-fatal
+
+        return congested_time
+
+    def plan_arrive_by(
+        self,
+        origin_location_id: str,
+        destination_location_id: str,
+        arrival_datetime: datetime,
+        modes: Optional[list] = None,
+        optimize_for: str = "time",
+    ) -> list[dict]:
+        """
+        Back-calculate required departure time to arrive at destination by arrival_datetime.
+
+        For each available route, computes the latest departure time that allows
+        arriving on or before arrival_datetime. Returns route options enriched with:
+        - required_departure_datetime: when the traveler must leave
+        - latest_departure_datetime: same value (for clarity)
+        - buffer_min: slack time (arrival_datetime - estimated_arrival_datetime)
+        """
+        from datetime import timedelta
+
+        if modes is None:
+            modes = list(TransportMode)
+
+        results = []
+        for mode in modes:
+            # Estimate travel time using a trial run from arrival_datetime (congestion proxy)
+            trial_route = self._plan_single_mode(
+                origin_location_id, destination_location_id,
+                arrival_datetime, mode, optimize_for
+            )
+            if trial_route is None:
+                continue
+
+            duration_min = trial_route["total_duration_min"]
+            # Required departure = arrival_datetime - duration
+            required_departure = arrival_datetime - timedelta(minutes=duration_min)
+
+            # Re-plan from the actual departure time for congestion accuracy
+            accurate_route = self._plan_single_mode(
+                origin_location_id, destination_location_id,
+                required_departure, mode, optimize_for
+            )
+            if accurate_route is None:
+                continue
+
+            accurate_duration = accurate_route["total_duration_min"]
+            estimated_arrival = required_departure + timedelta(minutes=accurate_duration)
+            buffer_min = (arrival_datetime - estimated_arrival).total_seconds() / 60
+
+            accurate_route["required_departure_datetime"] = required_departure.isoformat()
+            accurate_route["target_arrival_datetime"] = arrival_datetime.isoformat()
+            accurate_route["estimated_arrival_datetime"] = estimated_arrival.isoformat()
+            accurate_route["buffer_min"] = round(buffer_min, 1)
+            results.append(accurate_route)
+
+        if optimize_for == "time":
+            results.sort(key=lambda r: r.get("total_duration_min", float("inf")))
+        elif optimize_for == "cost":
+            results.sort(key=lambda r: r.get("total_cost", float("inf")))
+        else:
+            results.sort(key=lambda r: r.get("total_duration_min", float("inf")) + 0.5 * r.get("total_cost", float("inf")))
+
+        return results
 
     def _build_polyline(
         self, path_node_ids: list[str], subgraph: Optional[nx.DiGraph] = None

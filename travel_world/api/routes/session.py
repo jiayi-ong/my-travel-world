@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from travel_world.api.dependencies import get_session_service, get_session
 from travel_world.core.exceptions import SessionNotFoundError
+from travel_world.core.itinerary import ItineraryManifest
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -219,3 +220,52 @@ def reset_session(session_id: str, session_service=Depends(get_session_service))
     except SessionNotFoundError:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
     return {"session_id": session_id, "message": "Trip plan cleared.", "world_id": session.world_id}
+
+
+@router.post("/{session_id}/itinerary")
+def submit_itinerary(
+    session_id: str,
+    manifest: ItineraryManifest,
+    session_service=Depends(get_session_service),
+):
+    """
+    Submit a completed itinerary manifest for a session.
+
+    The agent calls this endpoint once — after full planning is complete —
+    to submit the self-contained ItineraryManifest. The travel world stores
+    it for retrieval by the evaluator. This replaces the incremental
+    trip_plan/add pattern as the primary itinerary submission mechanism.
+    """
+    try:
+        session = session_service.get_session(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    # Store the manifest on the session (serialized as dict)
+    setattr(session, "submitted_itinerary", manifest.model_dump(mode="json"))
+    return {
+        "status": "accepted",
+        "manifest_id": manifest.manifest_id,
+        "session_id": session_id,
+        "item_count": len(manifest.items),
+        "total_cost": manifest.total_cost,
+    }
+
+
+@router.get("/{session_id}/itinerary/manifest")
+def get_submitted_itinerary(
+    session_id: str,
+    session_service=Depends(get_session_service),
+):
+    """
+    Retrieve the submitted ItineraryManifest for a session.
+
+    Intended for the evaluator to retrieve the agent's final plan.
+    """
+    try:
+        session = session_service.get_session(session_id)
+    except SessionNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    manifest = getattr(session, "submitted_itinerary", None)
+    if manifest is None:
+        raise HTTPException(status_code=404, detail="No itinerary has been submitted for this session yet.")
+    return manifest

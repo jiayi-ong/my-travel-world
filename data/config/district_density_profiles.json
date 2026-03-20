@@ -1,65 +1,83 @@
 {
   "_comment": "Per-district-type location counts used by GeoGenerator. Edit freely — no code changes needed.",
   "_fields": {
-    "hotels":       "number of Hotel entities per district",
-    "attractions":  "number of Attraction entities per district",
-    "restaurants":  "number of Restaurant entities per district",
-    "event_venues": "[min, max] range; generator samples uniformly"
+    "hotels":           "number of Hotel entities per district",
+    "attractions":      "number of Attraction entities per district",
+    "restaurants":      "number of Restaurant entities per district",
+    "event_venues":     "[min, max] range; generator samples uniformly",
+    "service_venues":   "[min, max] range; generator samples uniformly",
+    "public_amenities": "count per district (0 = none; city-level generation handles hospitals/police)"
   },
 
   "default": {
     "hotels": 9,
     "attractions": 6,
     "restaurants": 25,
-    "event_venues": [1, 2]
+    "event_venues": [1, 2],
+    "service_venues": [1, 2],
+    "public_amenities": 0
   },
 
   "touristic": {
     "hotels": 18,
     "attractions": 8,
     "restaurants": 30,
-    "event_venues": [2, 3]
+    "event_venues": [2, 3],
+    "service_venues": [2, 4],
+    "public_amenities": 0
   },
 
   "cultural": {
     "hotels": 6,
     "attractions": 13,
     "restaurants": 20,
-    "event_venues": [2, 4]
+    "event_venues": [2, 4],
+    "service_venues": [1, 3],
+    "public_amenities": 0
   },
 
   "business": {
     "hotels": 15,
     "attractions": 2,
     "restaurants": 30,
-    "event_venues": [0, 1]
+    "event_venues": [0, 1],
+    "service_venues": [1, 2],
+    "public_amenities": 0
   },
 
   "residential": {
     "hotels": 4,
     "attractions": 3,
     "restaurants": 20,
-    "event_venues": [0, 1]
+    "event_venues": [0, 1],
+    "service_venues": [1, 2],
+    "public_amenities": 1
   },
 
   "nightlife": {
     "hotels": 9,
     "attractions": 5,
     "restaurants": 35,
-    "event_venues": [2, 3]
+    "event_venues": [2, 3],
+    "service_venues": [3, 5],
+    "public_amenities": 0
   },
 
   "historic": {
     "hotels": 9,
     "attractions": 11,
     "restaurants": 20,
-    "event_venues": [1, 2]
+    "event_venues": [1, 2],
+    "service_venues": [1, 2],
+    "public_amenities": 0
   },
 
   "waterfront": {
     "hotels": 12,
     "attractions": 8,
     "restaurants": 30,
-    "event_venues": [1, 2]
+    "event_venues": [1, 2],
+    "service_venues": [2, 3],
+    "public_amenities": 0
   }
 }
