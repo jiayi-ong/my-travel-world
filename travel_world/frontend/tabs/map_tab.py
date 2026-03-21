@@ -1,15 +1,12 @@
 """
-Map tab: interactive world visualisation with three zoom levels.
+Map tab: interactive world visualisation with two views.
 
-Level 1 – World   : city territories (coloured convex hulls) + optional flight arcs.
-                    Click a city dot to drill in.
-Level 2 – City    : district territories + top entity pins (hotels, restaurants, attractions).
-                    Click a district square to drill in; click a pin for detail.
-Level 3 – District: all venue pins (hotels, restaurants, events/attractions).
-                    Click a pin for detail.
+World view  : city territory hulls + optional flight arcs + city dot markers.
+City view   : district territory fills + all location pins by layer toggle.
+              Includes transit network, area attraction polygons, events.
 
 Detail panel (right column) shows the clicked item's card.
-Back button and breadcrumb allow upward navigation.
+City selection via selectbox (no click-to-navigate).
 """
 
 import json
@@ -26,7 +23,7 @@ _PALETTE = [
     "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC",
 ]
 
-# ── District type colours (distinct per type to reduce visual overlap noise) ──
+# ── District type colours ─────────────────────────────────────────────────────
 _DISTRICT_TYPE_COLOR = {
     "touristic":   "#F28E2B",
     "residential": "#76B7B2",
@@ -37,30 +34,34 @@ _DISTRICT_TYPE_COLOR = {
     "waterfront":  "#17BECF",
 }
 
-# ── Category options shown in the multi-select filter ────────────────────────
-_CAT_OPTIONS = ["Hotels", "Restaurants", "Events", "Attractions"]
+# ── Layer toggle options ──────────────────────────────────────────────────────
+_ALL_LAYERS = [
+    "🏨 Hotels", "🍽 Restaurants", "🏛 Attractions", "🌿 Area Attractions",
+    "🎭 Events", "🎮 Service Venues", "🏥 Amenities", "🚉 Transit",
+    "🚏 Transport Hubs", "✈ Flight Arcs",
+]
 
-# ── Session-state keys (all prefixed tworld_map_) ────────────────────────────
-_K_LEVEL = "tworld_map_level"
-_K_CITY  = "tworld_map_city_id"
-_K_DIST  = "tworld_map_district_id"
-_K_ITEM  = "tworld_map_selected_item"
-_K_ARCS  = "tworld_map_show_flights"
-_K_CATS  = "tworld_map_categories"
+# ── Pin configuration: loc_type -> (layer_label, symbol, color) ──────────────
+_PIN_CFG = {
+    "hotel":           ("🏨 Hotels",         "square",    "#FF6B35"),
+    "restaurant":      ("🍽 Restaurants",     "diamond",   "#4CAF50"),
+    "attraction":      ("🏛 Attractions",     "pentagon",  "#9C27B0"),
+    "area_attraction": ("🌿 Area Attractions", "circle",   "#00897B"),
+    "service_venue":   ("🎮 Service Venues",  "hexagram",  "#FFD700"),
+    "public_amenity":  ("🏥 Amenities",       "x",         "#5B9BD5"),
+    "transport_hub":   ("🚏 Transport Hubs",  "circle",    "#1A237E"),
+}
 
-_LVL_WORLD = "world"
-_LVL_CITY  = "city"
-_LVL_DIST  = "district"
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Initialisation
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _init() -> None:
     for k, v in [
-        (_K_LEVEL, _LVL_WORLD),
-        (_K_CITY,  None),
-        (_K_DIST,  None),
-        (_K_ITEM,  None),
-        (_K_ARCS,  True),
-        (_K_CATS,  list(_CAT_OPTIONS)),
+        ("tworld_map_view",   "world"),
+        ("tworld_map_item",   None),
+        ("tworld_map_layers", list(_ALL_LAYERS)),
     ]:
         if k not in st.session_state:
             st.session_state[k] = v
@@ -86,191 +87,109 @@ def render(client: TravelWorldClient) -> None:
         st.error(f"Could not load map data: {e.message}")
         return
 
-    city_map   = {c["city_id"]:   c for c in map_data["cities"]}
-    dist_map   = {d["district_id"]: d for d in map_data["districts"]}
-    loc_map    = {l["location_id"]: l for l in map_data["locations"]}
-    city_color = {
-        c["city_id"]: _PALETTE[i % len(_PALETTE)]
-        for i, c in enumerate(map_data["cities"])
-    }
+    city_map = {c["city_id"]: c for c in map_data["cities"]}
+    loc_map  = {l["location_id"]: l for l in map_data["locations"]}
 
-    _render_controls(city_map, dist_map)
+    _render_controls(city_map)
 
     col_map, col_detail = st.columns([7, 3], gap="small")
-
     with col_map:
-        level    = st.session_state[_K_LEVEL]
-        sel_dist = st.session_state[_K_DIST]
-        events: list[dict] = []
-        if level == _LVL_DIST and sel_dist:
-            dist = dist_map.get(sel_dist, {})
-            if dist:
-                events = _fetch_city_events(client, dist["city_id"], loc_map)
-
-        fig = _build_figure(map_data, city_map, dist_map, loc_map, city_color, events)
-
-        # Key changes on every navigation step → resets Plotly selection state
-        chart_key = (
-            f"map_{level}_{st.session_state[_K_CITY]}_{st.session_state[_K_DIST]}"
-        )
-        sel = st.plotly_chart(
-            fig,
-            use_container_width=True,
-            on_select="rerun",
-            selection_mode="points",
-            key=chart_key,
-        )
+        fig, xmin, xmax, ymin, ymax = _build_figure(map_data, city_map, loc_map, client)
+        # unique key so plotly resets selection when view changes
+        chart_key = f"map_{st.session_state['tworld_map_view']}"
+        sel = st.plotly_chart(fig, use_container_width=True, on_select="rerun",
+                              selection_mode="points", key=chart_key)
         _handle_selection(sel)
-
     with col_detail:
-        _render_detail_panel(city_map, dist_map)
+        _render_detail_panel(city_map)
 
-    # Legacy route planner preserved in a collapsed expander
     with st.expander("🗺️ Route Planner", expanded=False):
         _render_route_planner(client)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Controls: breadcrumb + back + flight toggle + category filter
+# Controls
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _render_controls(city_map: dict, dist_map: dict) -> None:
-    level = st.session_state[_K_LEVEL]
+def _render_controls(city_map: dict) -> None:
+    # Row 1: view selector
+    options  = ["🌍 World Overview"] + [c["name"] for c in city_map.values()]
+    city_ids = ["world"] + list(city_map.keys())
+    cur      = st.session_state["tworld_map_view"]
+    cur_idx  = city_ids.index(cur) if cur in city_ids else 0
 
-    crumb = "🌍 World"
-    if level in (_LVL_CITY, _LVL_DIST):
-        city = city_map.get(st.session_state[_K_CITY], {})
-        crumb += f" › **{city.get('name', '')}**"
-    if level == _LVL_DIST:
-        dist = dist_map.get(st.session_state[_K_DIST], {})
-        crumb += f" › {dist.get('name', '')}"
-    st.caption(crumb)
-
-    c1, c2, c3 = st.columns([1, 1, 3])
-    with c1:
-        st.session_state[_K_ARCS] = st.toggle(
-            "✈ Flight arcs",
-            value=st.session_state[_K_ARCS],
-            key="map_toggle_arcs",
-        )
-    with c2:
-        if level != _LVL_WORLD and st.button("⬅ Back", key="map_back"):
-            if level == _LVL_DIST:
-                st.session_state[_K_LEVEL] = _LVL_CITY
-                st.session_state[_K_DIST]  = None
-            else:
-                st.session_state[_K_LEVEL] = _LVL_WORLD
-                st.session_state[_K_CITY]  = None
-            st.session_state[_K_ITEM] = None
-            st.rerun()
-    with c3:
-        if level != _LVL_WORLD:
-            st.session_state[_K_CATS] = st.multiselect(
-                "Categories",
-                options=_CAT_OPTIONS,
-                default=st.session_state[_K_CATS],
-                key="map_cat_ms",
-                label_visibility="collapsed",
-            )
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Click / selection handling
-# ══════════════════════════════════════════════════════════════════════════════
-
-def _handle_selection(sel) -> None:
-    if not sel or not getattr(sel, "selection", None):
-        return
-    pts = getattr(sel.selection, "points", [])
-    if not pts:
-        return
-
-    pt = pts[0]
-    cd = pt.get("customdata") or []
-    if not cd:
-        return
-
-    item_type = cd[0] if len(cd) > 0 else None
-    item_id   = cd[1] if len(cd) > 1 else None
-    raw       = cd[2] if len(cd) > 2 else "{}"
-    try:
-        item_data = json.loads(raw) if isinstance(raw, str) else (raw or {})
-    except (json.JSONDecodeError, TypeError):
-        item_data = {}
-
-    if item_type == "city":
-        st.session_state[_K_LEVEL] = _LVL_CITY
-        st.session_state[_K_CITY]  = item_id
-        st.session_state[_K_DIST]  = None
-        st.session_state[_K_ITEM]  = {"_type": "city", **item_data}
-        st.rerun()
-    elif item_type == "district":
-        st.session_state[_K_LEVEL] = _LVL_DIST
-        st.session_state[_K_DIST]  = item_id
-        st.session_state[_K_ITEM]  = {"_type": "district", **item_data}
-        st.rerun()
-    elif item_type in ("hotel", "restaurant", "event", "attraction", "event_venue",
-                       "transport_hub", "landmark"):
-        st.session_state[_K_ITEM] = {"_type": item_type, **item_data}
+    chosen_label = st.selectbox(
+        "View", options=options, index=cur_idx,
+        key="map_view_select", label_visibility="collapsed",
+    )
+    chosen_id = city_ids[options.index(chosen_label)]
+    if chosen_id != st.session_state["tworld_map_view"]:
+        st.session_state["tworld_map_view"] = chosen_id
+        st.session_state["tworld_map_item"] = None
         st.rerun()
 
+    # Row 2: layer toggles
+    st.session_state["tworld_map_layers"] = st.multiselect(
+        "Layers", options=_ALL_LAYERS,
+        default=st.session_state["tworld_map_layers"],
+        key="map_layers_ms", label_visibility="collapsed",
+    )
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Figure builder – dispatches to the three level renderers
+# Figure builder
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _build_figure(map_data, city_map, dist_map, loc_map, city_color, events):
+def _build_figure(map_data, city_map, loc_map, client):
     import plotly.graph_objects as go
 
     fig = go.Figure()
     fig.update_layout(
-        paper_bgcolor="#DCDCDC",
-        plot_bgcolor="#F4F2EE",
-        xaxis=dict(
-            showgrid=False, showticklabels=False, zeroline=False,
-            fixedrange=False, constrain="domain",
-        ),
-        yaxis=dict(
-            showgrid=False, showticklabels=False, zeroline=False,
-            fixedrange=False, scaleanchor="x", scaleratio=1,
-        ),
+        paper_bgcolor="#DCDCDC", plot_bgcolor="#F4F2EE",
+        xaxis=dict(showgrid=False, showticklabels=False, zeroline=False,
+                   fixedrange=False, constrain="domain"),
+        yaxis=dict(showgrid=False, showticklabels=False, zeroline=False,
+                   fixedrange=False, scaleanchor="x", scaleratio=1),
         margin=dict(l=4, r=4, t=4, b=4),
-        height=560,
-        showlegend=True,
-        legend=dict(
-            orientation="h", y=-0.04, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11),
-        ),
-        dragmode="zoom",
-        hovermode="closest",
-        uirevision="map",   # preserve user pan/zoom across non-navigation rerenders
+        height=620, showlegend=True,
+        legend=dict(orientation="h", y=-0.04, x=0,
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
+        dragmode="pan", hovermode="closest",
+        uirevision=f"map_{st.session_state['tworld_map_view']}",
     )
 
-    level    = st.session_state[_K_LEVEL]
-    sel_city = st.session_state[_K_CITY]
-    sel_dist = st.session_state[_K_DIST]
-    cats     = set(st.session_state[_K_CATS])
+    layers = set(st.session_state["tworld_map_layers"])
+    view   = st.session_state["tworld_map_view"]
 
-    if level == _LVL_WORLD:
-        _traces_world(fig, map_data, city_color)
-    elif level == _LVL_CITY:
-        _traces_city(fig, map_data, loc_map, sel_city, city_color, cats)
-    elif level == _LVL_DIST:
-        _traces_district(fig, map_data, dist_map, loc_map, sel_dist, city_color, cats, events)
+    if view == "world":
+        xmin, xmax, ymin, ymax = _traces_world(fig, map_data, layers)
+    else:
+        xmin, xmax, ymin, ymax = _traces_city(fig, map_data, loc_map, view, layers, client)
 
-    return fig
+    fig.update_layout(
+        xaxis_range=[xmin, xmax],
+        yaxis_range=[ymin, ymax],
+    )
+    _add_scale_bar(fig, xmin, xmax, ymin, ymax)
+    return fig, xmin, xmax, ymin, ymax
 
 
-# ── Level 1: World ────────────────────────────────────────────────────────────
+# ── World view ────────────────────────────────────────────────────────────────
 
-def _traces_world(fig, map_data, city_color) -> None:
+def _traces_world(fig, map_data, layers):
     import plotly.graph_objects as go
 
     cities    = map_data["cities"]
     districts = map_data["districts"]
-    routes    = map_data["flight_routes"]
+    routes    = map_data.get("flight_routes", [])
     city_map  = {c["city_id"]: c for c in cities}
 
-    # City territory hulls (convex hull of district centroids)
+    city_color = {
+        c["city_id"]: _PALETTE[i % len(_PALETTE)]
+        for i, c in enumerate(cities)
+    }
+
+    # City territory hulls (convex hull of district points)
     city_dist_pts: dict = {}
     for d in districts:
         city_dist_pts.setdefault(d["city_id"], []).append((d["lon"], d["lat"]))
@@ -291,12 +210,12 @@ def _traces_world(fig, map_data, city_color) -> None:
             ))
 
     # Flight arcs
-    if st.session_state[_K_ARCS]:
+    if "✈ Flight Arcs" in layers:
         ax: list = []
         ay: list = []
         for r in routes:
-            oc = city_map.get(r["origin_city_id"])
-            dc = city_map.get(r["dest_city_id"])
+            oc = city_map.get(r.get("origin_city_id", ""))
+            dc = city_map.get(r.get("dest_city_id", ""))
             if oc and dc:
                 bx, by = _arc(oc["lon"], oc["lat"], dc["lon"], dc["lat"])
                 ax.extend(bx)
@@ -311,7 +230,7 @@ def _traces_world(fig, map_data, city_color) -> None:
                 hoverinfo="skip",
             ))
 
-    # City dots (labelled click targets)
+    # City dot markers (always shown — main world-level content)
     fig.add_trace(go.Scatter(
         x=[c["lon"] for c in cities],
         y=[c["lat"] for c in cities],
@@ -327,12 +246,13 @@ def _traces_world(fig, map_data, city_color) -> None:
         textfont=dict(size=10, color="#222"),
         customdata=[
             ["city", c["city_id"], json.dumps({
-                "city_id":        c["city_id"],
-                "name":           c["name"],
-                "safety_score":   c["safety_score"],
-                "travel_advisory": c["travel_advisory"],
-                "population":     c["population"],
-                "tourism_density": c["tourism_density"],
+                "city_id":          c["city_id"],
+                "name":             c["name"],
+                "safety_score":     c.get("safety_score"),
+                "travel_advisory":  c.get("travel_advisory"),
+                "population":       c.get("population"),
+                "tourism_density":  c.get("tourism_density"),
+                **({"city_archetype": c["city_archetype"]} if c.get("city_archetype") else {}),
             })]
             for c in cities
         ],
@@ -341,26 +261,24 @@ def _traces_world(fig, map_data, city_color) -> None:
         hovertemplate="<b>%{text}</b><extra></extra>",
     ))
 
-    _frame(fig, [c["lon"] for c in cities], [c["lat"] for c in cities], pad=0.4)
+    return _compute_bounds([c["lon"] for c in cities], [c["lat"] for c in cities], pad=0.35)
 
 
-# ── Level 2: City ─────────────────────────────────────────────────────────────
+# ── City view ─────────────────────────────────────────────────────────────────
 
-def _traces_city(fig, map_data, loc_map, sel_city, city_color, cats) -> None:
-    import plotly.graph_objects as go
+def _traces_city(fig, map_data, loc_map, city_id, layers, client):
+    city_locs  = [l for l in map_data["locations"]  if l.get("city_id") == city_id]
+    city_dists = [d for d in map_data["districts"]  if d.get("city_id") == city_id]
 
-    base_color = city_color.get(sel_city, "#4E79A7")
-    city_dists = [d for d in map_data["districts"] if d["city_id"] == sel_city]
-    city_locs  = [l for l in map_data["locations"] if l["city_id"] == sel_city]
-
-    # District territory fills — each district uses its type colour to distinguish overlapping areas
+    # District territory fills
     for d in city_dists:
-        pts = [(l["lon"], l["lat"]) for l in city_locs if l["district_id"] == d["district_id"]]
+        pts = [(l["lon"], l["lat"]) for l in city_locs if l.get("district_id") == d["district_id"]]
         pts.append((d["lon"], d["lat"]))
         hull  = _hull(pts, pad=0.04)
         dtype = d.get("district_type", "")
-        shade = _DISTRICT_TYPE_COLOR.get(dtype, _lighten(base_color, 0.35))
+        shade = _DISTRICT_TYPE_COLOR.get(dtype, "#888888")
         if hull:
+            import plotly.graph_objects as go
             fig.add_trace(go.Scatter(
                 x=[p[0] for p in hull],
                 y=[p[1] for p in hull],
@@ -372,173 +290,320 @@ def _traces_city(fig, map_data, loc_map, sel_city, city_color, cats) -> None:
                 hoverinfo="skip",
             ))
 
-    # District click dots
-    fig.add_trace(go.Scatter(
-        x=[d["lon"] for d in city_dists],
-        y=[d["lat"] for d in city_dists],
-        mode="markers+text",
-        marker=dict(
-            size=13,
-            color=base_color,
-            symbol="square",
-            line=dict(color="white", width=1.5),
-        ),
-        text=[d["name"] for d in city_dists],
-        textposition="top center",
-        textfont=dict(size=9, color="#222"),
-        customdata=[
-            ["district", d["district_id"], json.dumps(d)]
-            for d in city_dists
-        ],
-        showlegend=True,
-        name="Districts",
-        hovertemplate="<b>%{text}</b><extra></extra>",
-    ))
+    # Location pins by layer
+    _add_city_pins(fig, city_locs, layers, loc_map)
 
-    # Top-5 entity pins per visible category (reduced to keep city view readable)
-    _add_pins(fig, city_locs, cats, top_n=5)
+    # Area attraction polygons
+    _add_area_polygons(fig, city_locs, layers)
 
-    _frame(fig, [d["lon"] for d in city_dists], [d["lat"] for d in city_dists], pad=0.38)
-
-
-# ── Level 3: District ─────────────────────────────────────────────────────────
-
-def _traces_district(fig, map_data, dist_map, loc_map, sel_dist, city_color, cats, events) -> None:
-    import plotly.graph_objects as go
-
-    dist      = dist_map.get(sel_dist, {})
-    city_id   = dist.get("city_id", "")
-    base_color = city_color.get(city_id, "#4E79A7")
-    dist_locs  = [l for l in map_data["locations"] if l["district_id"] == sel_dist]
-
-    # District boundary highlight
-    pts  = [(l["lon"], l["lat"]) for l in dist_locs] + [(dist.get("lon", 0), dist.get("lat", 0))]
-    hull = _hull(pts, pad=0.03)
-    if hull:
-        fig.add_trace(go.Scatter(
-            x=[p[0] for p in hull],
-            y=[p[1] for p in hull],
-            mode="lines",
-            fill="toself",
-            fillcolor=_rgba(base_color, 0.06),
-            line=dict(color=base_color, width=2),
-            showlegend=False,
-            hoverinfo="skip",
-        ))
-
-    # All entity pins in this district — jitter applied to separate clustered markers
-    _add_pins(fig, dist_locs, cats, top_n=None, jitter=True)
-
-    # Events / attractions in district
-    ev_cats: set = set()
-    if "Events" in cats:
-        ev_cats.update(["music", "sports", "food", "theater", "art", "festival", "other", "conference"])
-    if "Attractions" in cats:
-        ev_cats.add("attraction")
-
-    if ev_cats:
-        dist_events = [
-            e for e in events
-            if e.get("_district_id") == sel_dist
-            and e.get("_lat") is not None
-            and (e.get("category", "").lower() in ev_cats)
-        ]
-        if dist_events:
-            ev_xs = [e["_lon"] + _jitter_x(500 + i) for i, e in enumerate(dist_events)]
-            ev_ys = [e["_lat"] + _jitter_y(500 + i) for i, e in enumerate(dist_events)]
+    # Events
+    if "🎭 Events" in layers:
+        cache_key = f"tworld_map_evts_{city_id}"
+        if cache_key not in st.session_state:
+            try:
+                evts = client.search_events(city_id=city_id)
+                for e in evts:
+                    venue = loc_map.get(e.get("venue_id", ""), {})
+                    e["_lat"] = venue.get("lat")
+                    e["_lon"] = venue.get("lon")
+                st.session_state[cache_key] = evts
+            except Exception:
+                st.session_state[cache_key] = []
+        evts_data = st.session_state[cache_key]
+        valid_evts = [e for e in evts_data if e.get("_lat") is not None]
+        if valid_evts:
+            import plotly.graph_objects as go
             fig.add_trace(go.Scatter(
-                x=ev_xs,
-                y=ev_ys,
+                x=[e["_lon"] + _jitter_x(500 + i) for i, e in enumerate(valid_evts)],
+                y=[e["_lat"] + _jitter_y(500 + i) for i, e in enumerate(valid_evts)],
                 mode="markers",
                 marker=dict(size=10, symbol="star", color="#E15759",
                             line=dict(color="white", width=1)),
-                text=[e.get("name", "") for e in dist_events],
+                text=[e.get("name", "") for e in valid_evts],
                 customdata=[
                     ["event", e["event_id"], json.dumps({
-                        "event_id":         e["event_id"],
-                        "name":             e.get("name", ""),
-                        "category":         e.get("category", ""),
-                        "start_datetime":   e.get("start_datetime", ""),
-                        "end_datetime":     e.get("end_datetime", ""),
+                        "event_id":          e["event_id"],
+                        "name":              e.get("name", ""),
+                        "category":          e.get("category", ""),
+                        "start_datetime":    e.get("start_datetime", ""),
+                        "end_datetime":      e.get("end_datetime", ""),
                         "base_ticket_price": e.get("base_ticket_price", 0),
-                        "requires_booking": e.get("requires_booking", True),
-                        "is_all_day_entry": e.get("is_all_day_entry", False),
-                        "description":      e.get("description", ""),
+                        "requires_booking":  e.get("requires_booking", True),
+                        "is_all_day_entry":  e.get("is_all_day_entry", False),
+                        "description":       e.get("description", ""),
                     })]
-                    for e in dist_events
+                    for e in valid_evts
                 ],
-                showlegend=True,
-                name="🎭 Events",
+                showlegend=True, name="🎭 Events",
                 hovertemplate="<b>%{text}</b><extra></extra>",
             ))
 
-    all_lons = [l["lon"] for l in dist_locs] + [dist.get("lon", 0)]
-    all_lats = [l["lat"] for l in dist_locs] + [dist.get("lat", 0)]
-    _frame(fig, all_lons, all_lats, pad=0.40)
+    # Transit network
+    if "🚉 Transit" in layers:
+        _draw_transit(fig, city_locs, city_id, layers, client)
+
+    # Compute bounds
+    all_lons = [l["lon"] for l in city_locs] + [d["lon"] for d in city_dists]
+    all_lats = [l["lat"] for l in city_locs] + [d["lat"] for d in city_dists]
+    return _compute_bounds(all_lons, all_lats, pad=0.30)
 
 
-# ── Shared entity pin renderer ─────────────────────────────────────────────────
+# ── Pin renderer ──────────────────────────────────────────────────────────────
 
-_PIN_CFG = {
-    "hotel":      ("Hotels",      "square",   "#FF6B35", "🏨"),
-    "restaurant": ("Restaurants", "diamond",  "#4CAF50", "🍽"),
-    "attraction": ("Attractions", "pentagon", "#9C27B0", "🏛"),
-}
-
-
-def _add_pins(fig, locs: list, cats: set, top_n: int | None, jitter: bool = False) -> None:
+def _add_city_pins(fig, city_locs, layers, loc_map):
     import plotly.graph_objects as go
 
-    # Running counter across all pin types so jitter offsets don't repeat per type
     global_idx = 0
-
-    for loc_type, (cat_name, symbol, color, emoji) in _PIN_CFG.items():
-        if cat_name not in cats:
+    for loc_type, (layer_label, symbol, color) in _PIN_CFG.items():
+        if layer_label not in layers:
             continue
-        pins = [l for l in locs if l.get("location_type") == loc_type]
+        pins = [l for l in city_locs if l.get("location_type") == loc_type]
         if not pins:
             continue
-        if top_n is not None:
-            pins = sorted(pins, key=lambda x: x.get("average_rating") or 0, reverse=True)[:top_n]
 
-        if jitter:
-            xs = [p["lon"] + _jitter_x(global_idx + i) for i, p in enumerate(pins)]
-            ys = [p["lat"] + _jitter_y(global_idx + i) for i, p in enumerate(pins)]
-            global_idx += len(pins)
-        else:
-            xs = [p["lon"] for p in pins]
-            ys = [p["lat"] for p in pins]
+        xs = [p["lon"] + _jitter_x(global_idx + i) for i, p in enumerate(pins)]
+        ys = [p["lat"] + _jitter_y(global_idx + i) for i, p in enumerate(pins)]
+        global_idx += len(pins)
 
         fig.add_trace(go.Scatter(
             x=xs, y=ys,
             mode="markers",
             marker=dict(size=10, symbol=symbol, color=color,
                         line=dict(color="white", width=1)),
-            text=[p["name"] for p in pins],
+            text=[p.get("name", "") for p in pins],
             customdata=[
                 [loc_type, p["location_id"], json.dumps(_loc_payload(p, loc_type))]
                 for p in pins
             ],
             showlegend=True,
-            name=f"{emoji} {cat_name}",
+            name=layer_label,
             hovertemplate="<b>%{text}</b><extra></extra>",
         ))
+
+
+# ── Area attraction polygons ──────────────────────────────────────────────────
+
+def _add_area_polygons(fig, city_locs, layers):
+    import plotly.graph_objects as go
+
+    if "🌿 Area Attractions" not in layers:
+        return
+
+    for loc in city_locs:
+        if loc.get("location_type") != "area_attraction":
+            continue
+
+        bp = loc.get("boundary_polygon")
+        if bp:
+            # boundary_polygon expected as list of {lon, lat} dicts or [lon, lat] pairs
+            try:
+                if isinstance(bp[0], dict):
+                    poly_lons = [pt["lon"] for pt in bp] + [bp[0]["lon"]]
+                    poly_lats = [pt["lat"] for pt in bp] + [bp[0]["lat"]]
+                else:
+                    poly_lons = [pt[0] for pt in bp] + [bp[0][0]]
+                    poly_lats = [pt[1] for pt in bp] + [bp[0][1]]
+                fig.add_trace(go.Scatter(
+                    x=poly_lons, y=poly_lats,
+                    mode="lines",
+                    fill="toself",
+                    fillcolor=_rgba("#00897B", 0.22),
+                    line=dict(color="#00897B", width=1.5),
+                    showlegend=False,
+                    hoverinfo="skip",
+                ))
+            except (IndexError, KeyError, TypeError):
+                pass
+
+        entrances = loc.get("entrances", [])
+        if entrances:
+            fig.add_trace(go.Scatter(
+                x=[e.get("lon", loc["lon"]) for e in entrances],
+                y=[e.get("lat", loc["lat"]) for e in entrances],
+                mode="markers",
+                marker=dict(size=9, symbol="star", color="#00897B",
+                            line=dict(color="white", width=1)),
+                text=[e.get("name", "Entrance") for e in entrances],
+                customdata=[
+                    ["entrance", e.get("entrance_id", ""), json.dumps({
+                        "entrance_id":      e.get("entrance_id", ""),
+                        "name":             e.get("name", "Entrance"),
+                        "is_main_entrance": e.get("is_main_entrance", False),
+                        "accessible":       e.get("accessible", True),
+                    })]
+                    for e in entrances
+                ],
+                showlegend=False,
+                hovertemplate="<b>%{text}</b><extra></extra>",
+            ))
+
+
+# ── Transit network drawing ───────────────────────────────────────────────────
+
+def _draw_transit(fig, city_locs, city_id, layers, client):
+    import plotly.graph_objects as go
+
+    cache_key = f"tworld_map_transit_{city_id}"
+    if cache_key not in st.session_state:
+        try:
+            lines = client.get_transit_lines(city_id)
+            st.session_state[cache_key] = lines
+        except Exception:
+            st.session_state[cache_key] = []
+    transit_lines = st.session_state[cache_key]
+
+    # Build stop location lookup
+    stop_locs = {l["location_id"]: l for l in city_locs if l.get("location_type") == "transit_stop"}
+
+    # Draw each line as polyline
+    for line in transit_lines:
+        coords = [
+            (stop_locs[sid]["lon"], stop_locs[sid]["lat"])
+            for sid in line.get("stop_ids", [])
+            if sid in stop_locs
+        ]
+        if len(coords) < 2:
+            continue
+        color = line.get("color", "#888888")
+        fig.add_trace(go.Scatter(
+            x=[c[0] for c in coords],
+            y=[c[1] for c in coords],
+            mode="lines",
+            line=dict(color=color, width=3),
+            showlegend=False,
+            hoverinfo="skip",
+            name=line.get("name", "Transit Line"),
+        ))
+
+    # Draw stop markers — split into regular and interchange for per-group styling
+    all_stops = list(stop_locs.values())
+    if not all_stops:
+        return
+
+    def stop_color(s):
+        for line in transit_lines:
+            if s["location_id"] in line.get("stop_ids", []):
+                return line.get("color", "#888888")
+        return "#888888"
+
+    regular     = [s for s in all_stops if not s.get("is_interchange")]
+    interchange = [s for s in all_stops if s.get("is_interchange")]
+
+    for group, size, border_color, border_w, legend_name in [
+        (regular,     7,  "white", 1,   "🚉 Transit Stops"),
+        (interchange, 11, "black", 1.5, "🔀 Interchanges"),
+    ]:
+        if not group:
+            continue
+        grp_colors = [stop_color(s) for s in group]
+        fig.add_trace(go.Scatter(
+            x=[s["lon"] for s in group],
+            y=[s["lat"] for s in group],
+            mode="markers",
+            marker=dict(
+                size=size,
+                color=grp_colors,
+                symbol="circle",
+                line=dict(color=border_color, width=border_w),
+            ),
+            text=[s.get("name", "") for s in group],
+            customdata=[
+                ["transit_stop", s["location_id"], json.dumps({
+                    "location_id":   s["location_id"],
+                    "name":          s.get("name", ""),
+                    "line_ids":      s.get("line_ids", []),
+                    "is_interchange": s.get("is_interchange", False),
+                    "accessible":    s.get("accessible", True),
+                })]
+                for s in group
+            ],
+            showlegend=True, name=legend_name,
+            hovertemplate="<b>%{text}</b><extra></extra>",
+        ))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Scale bar
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _add_scale_bar(fig, xmin, xmax, ymin, ymax):
+    import plotly.graph_objects as go
+
+    xspan = xmax - xmin
+    yspan = ymax - ymin
+    if xspan <= 0 or yspan <= 0:
+        return
+
+    lat_c = (ymin + ymax) / 2
+    km_per_deg = 111.32 * math.cos(math.radians(lat_c))
+
+    # Pick the largest d_km that fits in 25% of the visible width
+    d_km = 1
+    for candidate in [1, 2, 5, 10, 20, 50, 100]:
+        if candidate / km_per_deg < xspan * 0.25:
+            d_km = candidate
+
+    bar_deg = d_km / km_per_deg
+    x0    = xmin + xspan * 0.04
+    x1    = x0 + bar_deg
+    y_bar = ymin + yspan * 0.05
+    y_top = y_bar + yspan * 0.008
+
+    # Bar line
+    fig.add_trace(go.Scatter(
+        x=[x0, x1], y=[y_bar, y_bar],
+        mode="lines", line=dict(color="black", width=3),
+        showlegend=False, hoverinfo="skip",
+    ))
+    # Tick marks at ends
+    for x_tick in [x0, x1]:
+        fig.add_trace(go.Scatter(
+            x=[x_tick, x_tick], y=[y_bar, y_top],
+            mode="lines", line=dict(color="black", width=2),
+            showlegend=False, hoverinfo="skip",
+        ))
+    # Label
+    fig.add_annotation(
+        x=(x0 + x1) / 2, y=y_top + yspan * 0.012,
+        text=f"{d_km} km",
+        showarrow=False, font=dict(size=10, color="black"),
+        xanchor="center",
+        bgcolor="rgba(255,255,255,0.75)",
+        bordercolor="black", borderwidth=1,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Selection handling
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _handle_selection(sel) -> None:
+    if not sel or not getattr(sel, "selection", None):
+        return
+    pts = getattr(sel.selection, "points", [])
+    if not pts:
+        return
+    pt = pts[0]
+    cd = pt.get("customdata") or []
+    if not cd or len(cd) < 3:
+        return
+    item_type, item_id, raw = cd[0], cd[1], cd[2]
+    try:
+        item_data = json.loads(raw) if isinstance(raw, str) else (raw or {})
+    except Exception:
+        item_data = {}
+    st.session_state["tworld_map_item"] = {"_type": item_type, "_id": item_id, **item_data}
+    st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Detail panel
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _render_detail_panel(city_map: dict, dist_map: dict) -> None:
-    item = st.session_state.get(_K_ITEM)
+def _render_detail_panel(city_map: dict) -> None:
+    item = st.session_state.get("tworld_map_item")
     if not item:
-        level = st.session_state[_K_LEVEL]
-        hints = {
-            _LVL_WORLD: "👆 Click a **city** to zoom in.",
-            _LVL_CITY:  "👆 Click a **district** to zoom in, or a pin for details.",
-            _LVL_DIST:  "👆 Click a **pin** to see details.",
-        }
-        st.caption(hints.get(level, ""))
+        st.caption("👆 Click any location pin to see details.")
         return
 
     itype = item.get("_type", "")
@@ -551,22 +616,39 @@ def _render_detail_panel(city_map: dict, dist_map: dict) -> None:
             _panel_hotel(item)
         elif itype == "restaurant":
             _panel_restaurant(item)
+        elif itype in ("attraction", "area_attraction"):
+            _panel_attraction(item)
         elif itype == "event":
             _panel_event(item)
-        elif itype == "attraction":
-            _panel_attraction(item)
+        elif itype == "service_venue":
+            _panel_service_venue(item)
+        elif itype == "public_amenity":
+            _panel_public_amenity(item)
+        elif itype == "transit_stop":
+            _panel_transit_stop(item)
+        elif itype == "transport_hub":
+            _panel_transport_hub(item)
+        elif itype == "entrance":
+            _panel_entrance(item)
         else:
-            st.caption(f"**{item.get('name', item.get('location_id', ''))}**")
+            st.caption(f"**{item.get('name', item.get('_id', ''))}**")
             st.caption(f"Type: {itype}")
 
 
+# ── Panel renderers ───────────────────────────────────────────────────────────
+
 def _panel_city(item: dict) -> None:
-    safety = item.get("safety_score", 0)
+    safety = item.get("safety_score") or 0
     emoji  = "🟢" if safety >= 0.75 else ("🟡" if safety >= 0.55 else ("🟠" if safety >= 0.35 else "🔴"))
     st.markdown(f"### 🏙️ {item.get('name', 'City')}")
+    arch = item.get("city_archetype")
+    if arch:
+        st.caption(f"**{arch.replace('_', ' ').title()}**")
     c1, c2 = st.columns(2)
     c1.metric("Safety", f"{emoji} {safety:.2f}")
-    c2.metric("Population", f"{item.get('population', 0):,}")
+    pop = item.get("population")
+    if pop is not None:
+        c2.metric("Population", f"{pop:,}")
     advisory = item.get("travel_advisory", "")
     if advisory:
         if safety >= 0.75:
@@ -575,26 +657,29 @@ def _panel_city(item: dict) -> None:
             st.warning(advisory)
         else:
             st.error(advisory)
+    vibe = item.get("vibe_summary", "")
+    if vibe:
+        st.write(vibe)
 
 
 def _panel_district(item: dict) -> None:
-    safety = item.get("safety_score", 0)
+    safety = item.get("safety_score") or 0
     s_em   = "🟢" if safety >= 0.75 else ("🟡" if safety >= 0.55 else "🔴")
     st.markdown(f"### 📍 {item.get('name', 'District')}")
     st.caption(item.get("district_type", "").replace("_", " ").title())
     c1, c2 = st.columns(2)
-    c1.metric("Safety", f"{s_em} {safety:.2f}")
+    c1.metric("Safety",      f"{s_em} {safety:.2f}")
     c1.metric("Walkability", f"{item.get('walkability_score', 0):.2f}")
-    c2.metric("Cost index", f"{item.get('cost_index', 1):.2f}×")
+    c2.metric("Cost index",  f"{item.get('cost_index', 1):.2f}×")
     desc = item.get("description", "")
     if desc:
         st.write(desc)
 
 
 def _panel_hotel(item: dict) -> None:
-    stars   = "⭐" * int(item.get("star_rating") or 0)
-    rating  = item.get("average_rating")
-    price   = item.get("price_per_night")
+    stars  = "⭐" * int(item.get("star_rating") or 0)
+    rating = item.get("average_rating")
+    price  = item.get("price_per_night")
     st.markdown(f"### 🏨 {item.get('name', 'Hotel')}")
     if stars:
         st.caption(stars)
@@ -623,6 +708,36 @@ def _panel_restaurant(item: dict) -> None:
     if rating is not None:
         em = "🟢" if rating >= 4 else ("🟡" if rating >= 3 else "🔴")
         st.caption(f"{em} {rating:.1f} / 5  ({item.get('review_count', 0)} reviews)")
+    desc = item.get("description", "")
+    if desc:
+        st.write(desc)
+
+
+def _panel_attraction(item: dict) -> None:
+    rating = item.get("average_rating")
+    st.markdown(f"### 🏛️ {item.get('name', 'Attraction')}")
+    cat = item.get("category")
+    if cat:
+        st.caption(f"**{cat.replace('_', ' ').title()}**")
+    c1, c2 = st.columns(2)
+    duration = item.get("duration_hours")
+    if duration is not None:
+        c1.metric("Duration", f"{duration}h")
+    ticket = item.get("ticket_price")
+    if ticket is not None:
+        c2.metric("Ticket", f"${ticket:.2f}" if ticket else "Free")
+    ws = item.get("weather_sensitivity")
+    if ws is not None:
+        st.caption(f"Weather sensitivity: {ws:.1f}")
+    if rating is not None:
+        em = "🟢" if rating >= 4 else ("🟡" if rating >= 3 else "🔴")
+        st.caption(f"{em} {rating:.1f} / 5  ({item.get('review_count', 0)} reviews)")
+    sub_areas = item.get("sub_areas", [])
+    if sub_areas:
+        st.caption("Sub-areas: " + ", ".join(str(s) for s in sub_areas))
+    entrances = item.get("entrances", [])
+    if entrances:
+        st.caption(f"{len(entrances)} entrance(s)")
     desc = item.get("description", "")
     if desc:
         st.write(desc)
@@ -658,55 +773,143 @@ def _panel_event(item: dict) -> None:
         st.write(desc)
 
 
-def _panel_attraction(item: dict) -> None:
-    rating = item.get("average_rating")
-    st.markdown(f"### 🏛️ {item.get('name', 'Attraction')}")
-    if rating is not None:
-        em = "🟢" if rating >= 4 else ("🟡" if rating >= 3 else "🔴")
-        st.caption(f"{em} {rating:.1f} / 5  ({item.get('review_count', 0)} reviews)")
+def _panel_service_venue(item: dict) -> None:
+    st.markdown(f"### 🎮 {item.get('name', 'Service Venue')}")
+    cat = item.get("category")
+    if cat:
+        st.caption(f"**{cat.replace('_', ' ').title()}**")
+    open_t  = item.get("opening_time")
+    close_t = item.get("closing_time")
+    if open_t or close_t:
+        st.caption(f"🕐 {open_t or '?'} – {close_t or '?'}")
+    avg_spend = item.get("average_spend_per_person")
+    if avg_spend is not None:
+        st.metric("Avg spend", f"${avg_spend:.0f} / person")
+    age_r = item.get("age_restriction")
+    if age_r:
+        st.caption(f"🔞 Age restriction: {age_r}+")
+    if item.get("requires_reservation"):
+        st.info("Reservation required")
     desc = item.get("description", "")
     if desc:
         st.write(desc)
+
+
+def _panel_public_amenity(item: dict) -> None:
+    st.markdown(f"### 🏥 {item.get('name', 'Amenity')}")
+    atype = item.get("amenity_type")
+    if atype:
+        st.caption(f"**{atype.replace('_', ' ').title()}**")
+    if item.get("is_24_hours"):
+        st.success("🕐 Open 24 hours")
+    phone = item.get("phone_number", "")
+    if phone:
+        st.caption(f"📞 {phone}")
+    if item.get("emergency_services"):
+        st.error("🚨 Emergency services")
+    desc = item.get("description", "")
+    if desc:
+        st.write(desc)
+
+
+def _panel_transit_stop(item: dict) -> None:
+    st.markdown(f"### 🚉 {item.get('name', 'Transit Stop')}")
+    line_ids = item.get("line_ids", [])
+    if line_ids:
+        st.caption("Lines: " + ", ".join(str(l) for l in line_ids))
+    if item.get("is_interchange"):
+        st.info("🔀 Interchange station")
+    if item.get("accessible", True):
+        st.caption("♿ Accessible")
+    else:
+        st.caption("❌ Not accessible")
+
+
+def _panel_transport_hub(item: dict) -> None:
+    st.markdown(f"### 🚏 {item.get('name', 'Transport Hub')}")
+    hub_type = item.get("hub_type")
+    if hub_type:
+        st.caption(f"**{hub_type.replace('_', ' ').title()}**")
+    iata = item.get("iata_code")
+    if iata:
+        st.caption(f"IATA: **{iata}**")
+    desc = item.get("description", "")
+    if desc:
+        st.write(desc)
+
+
+def _panel_entrance(item: dict) -> None:
+    st.markdown(f"### 🚪 {item.get('name', 'Entrance')}")
+    if item.get("is_main_entrance"):
+        st.success("Main entrance")
+    if item.get("accessible", True):
+        st.caption("♿ Accessible")
+    else:
+        st.caption("❌ Not accessible")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Data helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _fetch_city_events(client: TravelWorldClient, city_id: str, loc_map: dict) -> list[dict]:
-    """Return events for a city, with venue lat/lon and district_id attached."""
-    cache_key = f"tworld_map_evts_{city_id}"
-    if cache_key not in st.session_state:
-        try:
-            evts = client.search_events(city_id=city_id)
-            for e in evts:
-                venue = loc_map.get(e.get("venue_id", ""), {})
-                e["_lat"]         = venue.get("lat")
-                e["_lon"]         = venue.get("lon")
-                e["_district_id"] = venue.get("district_id")
-            st.session_state[cache_key] = evts
-        except Exception:
-            st.session_state[cache_key] = []
-    return st.session_state[cache_key]
-
-
 def _loc_payload(loc: dict, loc_type: str) -> dict:
     """Minimal dict for the detail panel (keep customdata JSON lean)."""
     base = {
-        "location_id":   loc["location_id"],
-        "name":          loc.get("name", ""),
-        "description":   loc.get("description", ""),
+        "location_id":    loc["location_id"],
+        "name":           loc.get("name", ""),
+        "description":    loc.get("description", ""),
         "average_rating": loc.get("average_rating"),
-        "review_count":  loc.get("review_count", 0),
+        "review_count":   loc.get("review_count", 0),
     }
     if loc_type == "hotel":
-        base["star_rating"]    = loc.get("star_rating")
-        base["price_per_night"] = loc.get("price_per_night")
+        base.update({
+            "star_rating":    loc.get("star_rating"),
+            "price_per_night": loc.get("price_per_night"),
+            "amenities":      loc.get("amenities", []),
+        })
     elif loc_type == "restaurant":
-        base["cuisine_types"]      = loc.get("cuisine_types", [])
-        base["average_spend"]      = loc.get("average_spend")
-        base["michelin_stars"]     = loc.get("michelin_stars", 0)
-        base["reservation_required"] = loc.get("reservation_required", False)
+        base.update({
+            "cuisine_types":       loc.get("cuisine_types", []),
+            "average_spend":       loc.get("average_spend"),
+            "michelin_stars":      loc.get("michelin_stars", 0),
+            "reservation_required": loc.get("reservation_required", False),
+        })
+    elif loc_type in ("attraction", "area_attraction"):
+        base.update({
+            "category":           loc.get("category"),
+            "duration_hours":     loc.get("duration_hours"),
+            "ticket_price":       loc.get("ticket_price", 0),
+            "weather_sensitivity": loc.get("weather_sensitivity", 0),
+            "sub_areas":          loc.get("sub_areas", []),
+            "entrances":          loc.get("entrances", []),
+        })
+    elif loc_type == "service_venue":
+        base.update({
+            "category":                loc.get("category"),
+            "opening_time":            loc.get("opening_time"),
+            "closing_time":            loc.get("closing_time"),
+            "average_spend_per_person": loc.get("average_spend_per_person"),
+            "age_restriction":         loc.get("age_restriction"),
+            "requires_reservation":    loc.get("requires_reservation", False),
+        })
+    elif loc_type == "public_amenity":
+        base.update({
+            "amenity_type":      loc.get("amenity_type"),
+            "is_24_hours":       loc.get("is_24_hours", False),
+            "phone_number":      loc.get("phone_number", ""),
+            "emergency_services": loc.get("emergency_services", False),
+        })
+    elif loc_type == "transit_stop":
+        base.update({
+            "line_ids":       loc.get("line_ids", []),
+            "is_interchange": loc.get("is_interchange", False),
+            "accessible":     loc.get("accessible", True),
+        })
+    elif loc_type == "transport_hub":
+        base.update({
+            "hub_type":  loc.get("hub_type"),
+            "iata_code": loc.get("iata_code"),
+        })
     return base
 
 
@@ -725,7 +928,7 @@ def _jitter_y(i: int, scale: float = 0.004) -> float:
     return scale * math.sqrt(i + 1) * math.sin(angle)
 
 
-def _hull(pts: list[tuple], pad: float = 0.15) -> list[tuple]:
+def _hull(pts: list, pad: float = 0.15) -> list:
     """
     Compute a padded convex hull. Falls back to bounding box when scipy is
     unavailable, and handles degenerate 1- or 2-point cases.
@@ -793,18 +996,6 @@ def _arc(x0: float, y0: float, x1: float, y1: float, n: int = 25) -> tuple:
     return list(bx) + [None], list(by) + [None]
 
 
-def _frame(fig, lons: list, lats: list, pad: float = 0.35) -> None:
-    """Set xaxis/yaxis range to frame the given coordinate cloud."""
-    if not lons or not lats:
-        return
-    lon_span = max(max(lons) - min(lons), 0.1)
-    lat_span = max(max(lats) - min(lats), 0.1)
-    fig.update_layout(
-        xaxis_range=[min(lons) - lon_span * pad, max(lons) + lon_span * pad],
-        yaxis_range=[min(lats) - lat_span * pad, max(lats) + lat_span * pad],
-    )
-
-
 def _rgba(hex_color: str, alpha: float) -> str:
     """Convert '#RRGGBB' to 'rgba(r,g,b,alpha)'."""
     h = hex_color.lstrip("#")
@@ -822,8 +1013,20 @@ def _lighten(hex_color: str, factor: float) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _compute_bounds(lons: list, lats: list, pad: float = 0.3):
+    if not lons or not lats:
+        return -1, 1, -1, 1
+    lon_span = max(max(lons) - min(lons), 0.05)
+    lat_span = max(max(lats) - min(lats), 0.05)
+    xmin = min(lons) - lon_span * pad
+    xmax = max(lons) + lon_span * pad
+    ymin = min(lats) - lat_span * pad
+    ymax = max(lats) + lat_span * pad
+    return xmin, xmax, ymin, ymax
+
+
 # ══════════════════════════════════════════════════════════════════════════════
-# Legacy route planner (preserved in collapsed expander)
+# Route planner (preserved verbatim)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _render_route_planner(client: TravelWorldClient) -> None:
@@ -869,10 +1072,10 @@ def _render_route_planner(client: TravelWorldClient) -> None:
     st.session_state[state.MAP_ORIGIN_KEY] = origin_id
     st.session_state[state.MAP_DEST_KEY]   = dest_id
 
-    today          = datetime.date.today()
-    dep_date       = st.date_input("Departure Date", value=today, min_value=today, key="rp_date")
-    dep_time       = st.time_input("Departure Time", value=datetime.time(9, 0), key="rp_time")
-    dep_dt_str     = datetime.datetime.combine(dep_date, dep_time).isoformat()
+    today      = datetime.date.today()
+    dep_date   = st.date_input("Departure Date", value=today, min_value=today, key="rp_date")
+    dep_time   = st.time_input("Departure Time", value=datetime.time(9, 0), key="rp_time")
+    dep_dt_str = datetime.datetime.combine(dep_date, dep_time).isoformat()
 
     if st.button("Compare Routes", type="primary", key="rp_compare"):
         if not origin_id or not dest_id:
